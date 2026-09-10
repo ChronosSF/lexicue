@@ -1,15 +1,27 @@
-# Subtitle Translator — Phase 1
+# Subtitle Translator
 
-Phase 1 of the product described in `subtitle-translator-spec.md`: the
-translation harness, the subtitle parser and serialiser, the metered price
-function, a command-line tool and the evaluation corpus and runner. No AWS, no
-API, no web app — those are Phase 2 and later.
+The product described in `subtitle-translator-spec.md`. Two phases are in this
+repository.
 
-The exit criterion for this phase is that a film and a three-episode season
-translate from the command line with 100% structural fidelity on both lanes.
-That works today against the deterministic fake model; the one remaining step is
-running it against the real Claude API with an `ANTHROPIC_API_KEY`, which
-nothing in this repository has done.
+**Phase 1** is the engine: the translation harness, the subtitle parser and
+serialiser, the metered price function, a command-line tool and the evaluation
+corpus and runner. Its exit criterion — a film and a three-episode season
+translating with 100% structural fidelity on both lanes — is met against the
+deterministic fake model; the one remaining step is a run against the real
+Claude API with an `ANTHROPIC_API_KEY`, which nothing here has done.
+
+**Phase 2, in progress** is the web app in `apps/web`, with a mock backend that
+runs the whole product in the browser. Nothing on AWS exists yet.
+
+```sh
+pnpm install
+pnpm dev            # the app at http://localhost:5173, in mock mode
+```
+
+The demo lands signed in, with a wallet and a finished upload in its history,
+and the evaluation corpus offered as sample files. Read `apps/web/README.md`
+for what it can and cannot do, and for every place the specification was
+ambiguous and a reading had to be chosen.
 
 ## Packages
 
@@ -18,6 +30,8 @@ nothing in this repository has done.
 | `packages/subtitles` | Parser and serialiser for SubRip, MicroDVD and SubViewer, encoding detection, format detection and rejections, and the billable character count. Browser-safe.       |
 | `packages/pricing`   | The metered price function, the top-up amounts and the free balance. Zero dependencies, browser-safe.                                                                |
 | `packages/harness`   | The model client interface, the versioned prompts, the season and file glossary passes, both lanes, validation and retries, reassembly, verification and the report. |
+| `packages/shared`    | The zod schemas of the API contract in specification section 7.3, shared by the app now and the Lambda handlers later.                                               |
+| `apps/web`           | The React SPA: the three states of section 2, with a mock backend that implements section 7.3 in the browser.                                                        |
 | `packages/cli`       | `pnpm harness translate …`                                                                                                                                           |
 | `evals`              | The eval corpus, the hard and advisory metrics, the LLM-judge rubric and the runner.                                                                                 |
 
@@ -25,13 +39,15 @@ nothing in this repository has done.
 
 ```sh
 pnpm install
+pnpm dev         # the web app in mock mode
 pnpm lint        # ESLint with type-aware rules, then Prettier
-pnpm typecheck   # tsc -b across the workspace
-pnpm test        # 496 tests
+pnpm typecheck   # tsc -b across the workspace, then the app
+pnpm test        # 566 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
+pnpm --filter web build
 ```
 
-All four are offline and take about ten seconds in total.
+All of them are offline and take under a minute in total.
 
 ## Running the command-line tool
 
