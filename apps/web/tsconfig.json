@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    // The workspace packages are compiled from source here, exactly as Vite and
+    // Vitest resolve them; `subtitles/encoding` is deliberately not reachable.
+    "paths": {
+      "@subtitle-translator/subtitles/browser": ["../../packages/subtitles/src/browser/index.ts"],
+      "@subtitle-translator/subtitles": ["../../packages/subtitles/src/index.ts"],
+      "@subtitle-translator/pricing": ["../../packages/pricing/src/index.ts"],
+      "@subtitle-translator/harness": ["../../packages/harness/src/index.ts"],
+      "@subtitle-translator/shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "vitest.config.ts", "vitest.setup.ts", "env.d.ts"]
+}

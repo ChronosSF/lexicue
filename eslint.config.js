@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
   {
@@ -60,7 +61,29 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.test.ts", "evals/src/**/*.ts", "packages/cli/src/**/*.ts"],
+    // The web app: browser globals, the rules of hooks, and no Node built-ins.
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    extends: [reactHooks.configs.flat["recommended-latest"]],
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["node:*", "@subtitle-translator/subtitles/encoding"],
+              message:
+                "The SPA runs in a browser: use @subtitle-translator/subtitles/browser, which needs no Node built-ins.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "evals/src/**/*.ts", "packages/cli/src/**/*.ts"],
     languageOptions: { globals: { ...globals.node } },
     rules: {
       "@typescript-eslint/explicit-module-boundary-types": "off",
@@ -69,7 +92,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["*.js", "*.config.ts"],
+    files: ["**/*.js", "**/*.config.ts"],
     languageOptions: { globals: { ...globals.node } },
     extends: [tseslint.configs.disableTypeChecked],
     rules: { "no-restricted-syntax": "off" },

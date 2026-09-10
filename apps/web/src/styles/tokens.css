@@ -1,0 +1,122 @@
+/*
+ * The palette is a projection booth: warm paper and ink by day, a deep blue
+ * black by night, with one warm accent that stands for the lamp. Nothing else
+ * is coloured, so colour always means something: amber is the action, green is
+ * a finished file, red is a refund.
+ *
+ * Both themes follow `prefers-color-scheme`; every colour is defined once on
+ * `:root` and only re-pointed in the dark block, so no value exists in one
+ * theme alone.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #faf7f2;
+  --bg-grain: #f3ede3;
+  --surface: #ffffff;
+  --surface-sunken: #f5f1ea;
+  --surface-raised: #ffffff;
+  --border: #e4dbcd;
+  --border-strong: #cfc3af;
+
+  /* Ink */
+  --text: #1b1917;
+  --text-muted: #6a6257;
+  --text-faint: #8d8578;
+
+  /* The lamp */
+  --accent: #a8530b;
+  --accent-hover: #8e4408;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbeedd;
+  --accent-line: #e8c99c;
+
+  /* Meaning */
+  --ok: #196b4e;
+  --ok-soft: #e2f2ea;
+  --warn: #8a5d00;
+  --warn-soft: #fbf0d8;
+  --danger: #a32b21;
+  --danger-soft: #fbe8e5;
+  --info: #1f5673;
+  --info-soft: #e4eff5;
+
+  /* Depth */
+  --shadow-sm: 0 1px 2px rgb(28 24 18 / 6%);
+  --shadow-md: 0 6px 20px -8px rgb(28 24 18 / 18%);
+  --shadow-lg: 0 24px 60px -24px rgb(28 24 18 / 32%);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* Rhythm */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Type */
+  --font-display: "Fraunces Variable", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-body:
+    "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.875rem;
+  --text-2xl: 2.5rem;
+
+  --content-width: 1120px;
+  --header-height: 3.75rem;
+  --transition: 140ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #121418;
+    --bg-grain: #171a1f;
+    --surface: #1a1d23;
+    --surface-sunken: #202429;
+    --surface-raised: #22262d;
+    --border: #2d323a;
+    --border-strong: #3d434d;
+
+    --text: #eee8de;
+    --text-muted: #a19a90;
+    --text-faint: #7d766d;
+
+    --accent: #efb35d;
+    --accent-hover: #f6c377;
+    --accent-ink: #241705;
+    --accent-soft: #2a2318;
+    --accent-line: #4a3a20;
+
+    --ok: #5cc198;
+    --ok-soft: #16271f;
+    --warn: #d8a53e;
+    --warn-soft: #262013;
+    --danger: #ec8279;
+    --danger-soft: #2a1917;
+    --info: #7cb4d0;
+    --info-soft: #16222a;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-md: 0 6px 20px -8px rgb(0 0 0 / 60%);
+    --shadow-lg: 0 24px 60px -24px rgb(0 0 0 / 80%);
+  }
+}

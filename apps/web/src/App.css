@@ -1,0 +1,35 @@
+.main {
+  flex: 1 1 auto;
+  padding-block: var(--space-6) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.hero {
+  max-width: 46rem;
+  gap: var(--space-3);
+}
+
+.hero h1 {
+  font-size: clamp(1.75rem, 1.2rem + 2.2vw, var(--text-2xl));
+  font-variation-settings:
+    "SOFT" 18,
+    "WONK" 1;
+}
+
+.hero-lead {
+  font-size: var(--text-md);
+  color: var(--text-muted);
+  max-width: 40rem;
+}
+
+.app-footer {
+  padding-block: var(--space-5) var(--space-6);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-xs);
+}
+
+.app-footer p {
+  max-width: 46rem;
+}
