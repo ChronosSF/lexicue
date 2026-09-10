@@ -65,6 +65,31 @@ export function listMarkup(text: string): string[] {
   );
 }
 
+/** One piece of a line: either a markup token or a run of plain text. */
+export interface MarkupSegment {
+  markup: boolean;
+  value: string;
+}
+
+/**
+ * Splits a line into markup tokens and the plain text between them. The harness
+ * uses this to transform only the words — re-wrapping a cue in the source's
+ * outer tags, or, in the fake model client, wrapping the dialogue in guillemets
+ * without touching a single tag.
+ */
+export function splitMarkup(text: string): MarkupSegment[] {
+  const segments: MarkupSegment[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(new RegExp(MARKUP.source, "gi"))) {
+    const index = match.index;
+    if (index > cursor) segments.push({ markup: false, value: text.slice(cursor, index) });
+    segments.push({ markup: true, value: match[0] });
+    cursor = index + match[0].length;
+  }
+  if (cursor < text.length) segments.push({ markup: false, value: text.slice(cursor) });
+  return segments;
+}
+
 /** The multiset of inline tags in the text, keyed by normalised tag. */
 export function tagMultiset(text: string): Map<string, number> {
   return countTokens(listTags(text));

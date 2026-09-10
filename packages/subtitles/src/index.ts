@@ -38,9 +38,11 @@ export {
   markupMultisetsEqual,
   normaliseTag,
   splitLeadingCodes,
+  splitMarkup,
   stripMarkup,
   tagMultiset,
   tagMultisetsEqual,
+  type MarkupSegment,
 } from "./tags.js";
 export { BOM, detectLineEnding, encodeUtf8, splitLines, stripBom } from "./text.js";
 export { restoreLines } from "./formats/common.js";
