@@ -123,3 +123,26 @@ export {
   type EconomyEntry,
   type RawBatchResult,
 } from "./batches.js";
+
+export { matchLineCount, reflowLines, rewrapWithSourceTags } from "./reflow.js";
+export { validateBatch, type BatchValidation, type CueFinding } from "./validate.js";
+export { reassembleDocument } from "./reassemble.js";
+export {
+  DEFAULT_MODEL_PRICE,
+  MODEL_PRICES,
+  costBreakdown,
+  formatUsd,
+  modelCostUsd,
+  priceFor,
+  type CostBreakdown,
+  type ModelPrice,
+} from "./cost.js";
+export {
+  buildFileReport,
+  type FileReport,
+  type LineLengthFinding,
+  type ReadingSpeedFinding,
+  type UntranslatedCue,
+  type UploadReport,
+} from "./report.js";
+export { translateFile, type TranslateFileInput, type TranslatedFile } from "./translate-file.js";
