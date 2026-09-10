@@ -1,0 +1,64 @@
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    transform var(--transition);
+}
+
+.history-row:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-1px);
+}
+
+.history-when {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-files {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.history-names {
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.history-meta {
+  font-size: var(--text-xs);
+}
+
+.history-price {
+  font-weight: 650;
+}
+
+@media (max-width: 720px) {
+  .history-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--space-2);
+  }
+
+  .history-when {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,84 @@
+.wallet-balance {
+  font-size: clamp(2.25rem, 1.5rem + 3vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variation-settings:
+    "SOFT" 20,
+    "WONK" 1;
+}
+
+.topup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.topup-amounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3);
+}
+
+.topup-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.topup-amount:hover {
+  border-color: var(--border-strong);
+}
+
+.topup-amount:has(input:focus-visible) {
+  box-shadow: var(--ring);
+}
+
+.topup-amount.is-chosen {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.topup-value {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.topup-detail {
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+
+.topup-hint {
+  max-width: 26rem;
+}
+
+.transactions {
+  padding: 0;
+}
+
+.transaction-what {
+  margin-right: var(--space-2);
+}
+
+.transaction-kind {
+  vertical-align: middle;
+}
+
+.transaction-free {
+  display: block;
+  font-size: var(--text-xs);
+}
+
+.transaction-up {
+  color: var(--ok);
+  font-weight: 600;
+}

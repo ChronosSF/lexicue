@@ -6,8 +6,10 @@ import { useRoute, type Route } from "./app/routes.js";
 import type { BackendAdapter } from "./backend/types.js";
 import { SignInScreen } from "./features/auth/SignInScreen.js";
 import { BatchScreen } from "./features/batch/BatchScreen.js";
+import { HistoryScreen } from "./features/history/HistoryScreen.js";
 import { UploadScreen } from "./features/upload/UploadScreen.js";
 import { CheckoutScreen } from "./features/wallet/CheckoutScreen.js";
+import { WalletScreen } from "./features/wallet/WalletScreen.js";
 import { AppHeader } from "./ui/AppHeader.js";
 import type { MenuItem } from "./ui/Menu.js";
 
@@ -39,7 +41,24 @@ function Shell(): React.JSX.Element {
   const menuItems: MenuItem[] = verified ? buildMenu() : [];
 
   function buildMenu(): MenuItem[] {
-    const items: MenuItem[] = [];
+    const items: MenuItem[] = [
+      {
+        id: "wallet",
+        label: "Wallet",
+        hint: "Balance, top-ups and every transaction",
+        onSelect: () => {
+          navigate({ name: "wallet" });
+        },
+      },
+      {
+        id: "history",
+        label: "History",
+        hint: "Uploads from the last 30 days",
+        onSelect: () => {
+          navigate({ name: "history" });
+        },
+      },
+    ];
     if (backend.demo !== null) {
       items.push({
         id: "reset",
@@ -72,6 +91,13 @@ function Shell(): React.JSX.Element {
             ? null
             : { balanceCents: me.data.balanceCents, freeCents: me.data.freeCents }
         }
+        {...(verified
+          ? {
+              onOpenWallet: () => {
+                navigate({ name: "wallet" });
+              },
+            }
+          : {})}
         menuItems={menuItems}
         {...(backend.kind === "mock" ? { demoBadge: "Demo" } : {})}
       />
@@ -103,7 +129,9 @@ function Screen({ route }: { route: Route }): React.JSX.Element {
     case "batch":
       return <BatchScreen batchId={route.batchId} />;
     case "wallet":
+      return <WalletScreen />;
     case "history":
+      return <HistoryScreen />;
     case "translate":
       return <UploadScreen />;
   }
