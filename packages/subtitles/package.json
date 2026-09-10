@@ -1,0 +1,24 @@
+{
+  "name": "@subtitle-translator/subtitles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./encoding": {
+      "types": "./dist/encoding/index.d.ts",
+      "default": "./dist/encoding/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "chardet": "2.2.0",
+    "iconv-lite": "0.7.3"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/subtitles" },
+    { "path": "./packages/pricing" },
+    { "path": "./packages/harness" },
+    { "path": "./packages/cli" },
+    { "path": "./evals" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "dist"],
+  "references": [
+    { "path": "../packages/subtitles" },
+    { "path": "../packages/pricing" },
+    { "path": "../packages/harness" }
+  ]
+}

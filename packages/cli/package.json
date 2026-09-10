@@ -1,0 +1,23 @@
+{
+  "name": "@subtitle-translator/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "harness": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@subtitle-translator/harness": "workspace:*",
+    "@subtitle-translator/pricing": "workspace:*",
+    "@subtitle-translator/subtitles": "workspace:*"
+  }
+}

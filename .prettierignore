@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+pnpm-lock.yaml
+evals/results/
+packages/subtitles/src/__fixtures__/
+evals/corpus/
