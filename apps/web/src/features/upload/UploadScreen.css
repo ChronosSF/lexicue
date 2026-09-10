@@ -1,0 +1,11 @@
+.upload {
+  width: 100%;
+}
+
+.upload-summary {
+  align-items: baseline;
+}
+
+.upload-problem-count {
+  margin-left: var(--space-2);
+}

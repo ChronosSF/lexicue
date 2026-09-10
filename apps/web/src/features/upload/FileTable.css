@@ -1,0 +1,34 @@
+.file-table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.file-name {
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.file-sub {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.file-table .price {
+  color: var(--text-muted);
+}
+
+.file-table .price.is-chosen {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.file-table tr.is-problem td {
+  background: var(--danger-soft);
+}
+
+.problem {
+  font-size: var(--text-sm);
+  color: var(--danger);
+  max-width: 46rem;
+}
