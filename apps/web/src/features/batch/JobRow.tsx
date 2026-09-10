@@ -93,14 +93,18 @@ function JobStatus({ job, percent }: { job: Job; percent: number }): React.JSX.E
       );
     case "submitted":
       return <span className="chip chip-info">Submitted to the batch</span>;
-    case "done":
+    case "done": {
+      // A file that came back with cues in the source language is delivered,
+      // but it is not finished business: it reads as a flag, not as a tick.
+      const left = job.report?.untranslatedCues.length ?? 0;
+      if (left === 0) return <span className="chip chip-ok">Translated</span>;
       return (
-        <span className="chip chip-ok">
-          {job.report !== null && job.report.untranslatedCues.length > 0
-            ? `${formatCount(job.report.translatedCues)} of ${formatCount(job.report.totalCues)} cues translated`
-            : "Translated"}
+        <span className="chip chip-warn">
+          {formatCount(job.report?.translatedCues ?? 0)} of{" "}
+          {formatCount(job.report?.totalCues ?? 0)} cues translated
         </span>
       );
+    }
     case "failed":
       return <span className="chip chip-danger">Refunded</span>;
   }
