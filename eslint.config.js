@@ -68,6 +68,12 @@ export default tseslint.config(
       globals: { ...globals.browser },
     },
     rules: {
+      // Dropping a field with rest destructuring is how the wire shapes are
+      // narrowed; the discarded name is the point, not an oversight.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true, argsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
       "no-restricted-imports": [
         "error",
         {

@@ -1,0 +1,111 @@
+[
+  {
+    "path": "the-lamp-room.srt",
+    "fileName": "the-lamp-room.srt",
+    "title": "The Lamp Room",
+    "description": "Two keepers, one lamp and a running joke. Two-speaker cues, italics and a positioning override.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 38
+  },
+  {
+    "path": "the-last-tender.srt",
+    "fileName": "the-last-tender.srt",
+    "title": "The Last Tender",
+    "description": "A drama with long silences, radio procedure and shifts of register.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 34
+  },
+  {
+    "path": "the-keepers.srt",
+    "fileName": "the-keepers.srt",
+    "title": "The Keepers",
+    "description": "A documentary: dates, numbers and narration against interview speech.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 27
+  },
+  {
+    "path": "the-lamp-room.hi.srt",
+    "fileName": "the-lamp-room.hi.srt",
+    "title": "The Lamp Room, hearing impaired",
+    "description": "The same episode with bracketed sound descriptions, speaker labels and lyrics.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 28
+  },
+  {
+    "path": "der-leuchtturm.srt",
+    "fileName": "der-leuchtturm.srt",
+    "title": "Der Leuchtturm",
+    "description": "A German source, so the formality setting and the same-language refusal have something to work on.",
+    "format": "srt",
+    "sourceLanguage": "de",
+    "cues": 28
+  },
+  {
+    "path": "el-faro.srt",
+    "fileName": "el-faro.srt",
+    "title": "El Faro",
+    "description": "A Spanish source with inverted punctuation.",
+    "format": "srt",
+    "sourceLanguage": "es",
+    "cues": 28
+  },
+  {
+    "path": "formats/the-lamp-room.microdvd.sub",
+    "fileName": "the-lamp-room.microdvd.sub",
+    "title": "The Lamp Room, MicroDVD",
+    "description": "Frame-based timings, control codes and pipe line breaks.",
+    "format": "microdvd",
+    "sourceLanguage": "en",
+    "cues": 39
+  },
+  {
+    "path": "formats/the-lamp-room.subviewer.sub",
+    "fileName": "the-lamp-room.subviewer.sub",
+    "title": "The Lamp Room, SubViewer",
+    "description": "An [INFORMATION] block and [br] line breaks.",
+    "format": "subviewer",
+    "sourceLanguage": "en",
+    "cues": 38
+  },
+  {
+    "path": "season/skerry-point-s01e01.srt",
+    "fileName": "skerry-point-s01e01.srt",
+    "title": "Skerry Point 1.1",
+    "description": "Episode one: Marta, Ivo and the Light. Upload all three together for one season glossary.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 23
+  },
+  {
+    "path": "season/skerry-point-s01e02.srt",
+    "fileName": "skerry-point-s01e02.srt",
+    "title": "Skerry Point 1.2",
+    "description": "Episode two introduces Petar late, which is what the shared glossary has to carry forward.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 30
+  },
+  {
+    "path": "season/skerry-point-s01e03.srt",
+    "fileName": "skerry-point-s01e03.srt",
+    "title": "Skerry Point 1.3",
+    "description": "Episode three: all three running jokes, and the cross-episode consistency check.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 28
+  },
+  {
+    "path": "fail.srt",
+    "fileName": "fail.srt",
+    "title": "fail.srt",
+    "description": "A copy of The Lamp Room under a name the demo fails on purpose, to show the automatic refund.",
+    "format": "srt",
+    "sourceLanguage": "en",
+    "cues": 38,
+    "fails": true
+  }
+]
