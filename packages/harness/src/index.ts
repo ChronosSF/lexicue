@@ -147,3 +147,8 @@ export {
   type UploadReport,
 } from "./report.js";
 export { translateFile, type TranslateFileInput, type TranslatedFile } from "./translate-file.js";
+export {
+  translateUpload,
+  type TranslateUploadInput,
+  type TranslatedUpload,
+} from "./translate-upload.js";
