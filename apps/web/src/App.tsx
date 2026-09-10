@@ -5,6 +5,7 @@ import { useMe, useResetDemo, useSession, useSignOut } from "./app/queries.js";
 import { useRoute, type Route } from "./app/routes.js";
 import type { BackendAdapter } from "./backend/types.js";
 import { SignInScreen } from "./features/auth/SignInScreen.js";
+import { BatchScreen } from "./features/batch/BatchScreen.js";
 import { UploadScreen } from "./features/upload/UploadScreen.js";
 import { CheckoutScreen } from "./features/wallet/CheckoutScreen.js";
 import { AppHeader } from "./ui/AppHeader.js";
@@ -100,6 +101,7 @@ function Screen({ route }: { route: Route }): React.JSX.Element {
     case "checkout":
       return <CheckoutScreen sessionId={route.sessionId} amountCents={route.amountCents} />;
     case "batch":
+      return <BatchScreen batchId={route.batchId} />;
     case "wallet":
     case "history":
     case "translate":

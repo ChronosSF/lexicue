@@ -1,0 +1,54 @@
+.season-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.season-source {
+  font-size: var(--text-sm);
+}
+
+.season-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.season-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  font-size: var(--text-sm);
+}
+
+.season-list li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.season-term {
+  font-weight: 600;
+}
+
+.season-rendered {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.season-note {
+  font-size: var(--text-xs);
+}
+
+.season-notes {
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

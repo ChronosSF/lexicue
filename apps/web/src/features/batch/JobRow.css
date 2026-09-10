@@ -1,0 +1,66 @@
+.job-row {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  list-style: none;
+}
+
+.job-row:last-child {
+  border-bottom: none;
+}
+
+.job-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.job-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.job-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.job-meta {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.job-refunded {
+  color: var(--danger);
+}
+
+.job-state {
+  flex: 0 0 auto;
+}
+
+.job-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.job-bar {
+  margin-top: var(--space-3);
+}
+
+.job-error {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--danger-soft);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+.job-row.is-done .job-name {
+  color: var(--text);
+}
