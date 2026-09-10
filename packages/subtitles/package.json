@@ -12,6 +12,10 @@
     "./encoding": {
       "types": "./dist/encoding/index.d.ts",
       "default": "./dist/encoding/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
     }
   },
   "scripts": {
