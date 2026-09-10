@@ -88,3 +88,38 @@ export {
   type Fault,
   type FaultInjectingOptions,
 } from "./clients/fault.js";
+
+export { mapWithConcurrency, realWait, type Wait } from "./concurrency.js";
+export { withTransportRetry } from "./transport.js";
+export {
+  buildBatchRequest,
+  buildGlossaryRequest,
+  buildSeasonGlossaryRequest,
+  buildSourceDocument,
+  cacheTtlFor,
+  type RequestContext,
+} from "./requests.js";
+export {
+  findContradictions,
+  mergeGlossaries,
+  runGlossaryPass,
+  type GlossaryPassResult,
+} from "./glossary.js";
+export {
+  buildSeasonSample,
+  runSeasonGlossaryPass,
+  type SeasonGlossaryResult,
+  type SeasonSample,
+} from "./season.js";
+export {
+  collectEconomyBatch,
+  parseCustomId,
+  planBatches,
+  runFastLaneBatches,
+  runOneBatch,
+  submitEconomyBatch,
+  type BatchPlanEntry,
+  type CollectOptions,
+  type EconomyEntry,
+  type RawBatchResult,
+} from "./batches.js";
