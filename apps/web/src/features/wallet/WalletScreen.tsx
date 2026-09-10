@@ -3,7 +3,7 @@ import type { LedgerEntry } from "@subtitle-translator/shared";
 import { useState } from "react";
 import { useMe, usePricing, useTopUp } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";
-import { formatDateTime } from "../../ui/format.js";
+import { formatDateTime, formatDollars } from "../../ui/format.js";
 import "./WalletScreen.css";
 
 /**
@@ -55,7 +55,7 @@ export function WalletScreen(): React.JSX.Element {
                   setAmount(value);
                 }}
               />
-              <span className="topup-value num">{formatCents(value)}</span>
+              <span className="topup-value num">{formatDollars(value)}</span>
               <span className="topup-detail faint">{examplesFor(value)}</span>
             </label>
           ))}

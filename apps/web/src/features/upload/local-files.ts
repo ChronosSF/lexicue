@@ -61,7 +61,7 @@ let counter = 0;
  * browser, non-subtitle entries are noted rather than shown, and every
  * remaining file is parsed and priced.
  */
-export function intake(raw: RawFile[], existing: LocalFile[] = []): IntakeResult {
+export function intake(raw: RawFile[], existingNames: readonly string[] = []): IntakeResult {
   const expanded: RawFile[] = [];
   const ignored: string[] = [];
 
@@ -80,9 +80,9 @@ export function intake(raw: RawFile[], existing: LocalFile[] = []): IntakeResult
   }
 
   // A `.sub` next to a `.idx` is a VobSub pair: pictures of text. The sibling
-  // list has to include what is already in the table, because the two halves
-  // often arrive in separate drops.
-  const siblings = [...existing.map((file) => file.fileName), ...raw.map((file) => file.name)];
+  // list includes everything the table has already seen, ignored entries and
+  // all, because the two halves often arrive in separate drops.
+  const siblings = [...existingNames, ...raw.map((file) => file.name)];
 
   return {
     files: expanded.map((file) => describe(file, siblings)),

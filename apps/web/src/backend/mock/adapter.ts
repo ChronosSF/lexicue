@@ -760,7 +760,13 @@ export class MockBackend implements BackendAdapter {
     for (const checkout of state.checkouts) {
       if (checkout.status !== "paid" || checkout.credited) continue;
       if (checkout.creditAt !== null && checkout.creditAt > now) continue;
-      applyTopUp(state, { amountCents: checkout.amountCents, ref: checkout.sessionId, now });
+      applyTopUp(state, {
+        amountCents: checkout.amountCents,
+        ref: checkout.sessionId,
+        // The ledger records when the payment was confirmed, not when this read
+        // happened to notice it; a webhook lands seconds after the checkout.
+        now: checkout.creditAt ?? now,
+      });
       checkout.credited = true;
       changed = true;
     }

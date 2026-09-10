@@ -1,5 +1,6 @@
 import { formatCents } from "@subtitle-translator/pricing";
 import type { Batch } from "@subtitle-translator/shared";
+import { useBackend } from "../../app/backend.js";
 import { useBatch, useDeleteBatchFiles } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";
 import { formatRelativeFuture, pluralise } from "../../ui/format.js";
@@ -14,6 +15,7 @@ import { SeasonGlossaryPanel } from "./SeasonGlossaryPanel.js";
  */
 export function BatchScreen({ batchId }: { batchId: string }): React.JSX.Element {
   const { navigate } = useRoute();
+  const backend = useBackend();
   const batch = useBatch(batchId);
   const deleteFiles = useDeleteBatchFiles();
 
@@ -80,6 +82,16 @@ export function BatchScreen({ batchId }: { batchId: string }): React.JSX.Element
         </ul>
       </section>
 
+      {backend.kind === "mock" && untranslatedInDemo(data) ? (
+        <p className="batch-demo-note">
+          The demo translates with the deterministic fake model of the test suite, which wraps
+          English dialogue in guillemets and changes nothing else. That proves the structural
+          guarantee, and it is worth nothing as a translation: for a target in a non-Latin script
+          the harness is right to report every cue as untranslated, because English is not
+          Bulgarian. Against the real model these counts are what they say they are.
+        </p>
+      ) : null}
+
       {data.seasonGlossary === null ? null : <SeasonGlossaryPanel glossary={data.seasonGlossary} />}
 
       <section className="batch-footer">
@@ -117,6 +129,11 @@ export function BatchScreen({ batchId }: { batchId: string }): React.JSX.Element
       </section>
     </div>
   );
+}
+
+/** True when the fake model's output was flagged, which is a demo artefact. */
+function untranslatedInDemo(batch: Batch): boolean {
+  return batch.jobs.some((job) => (job.report?.untranslatedCues.length ?? 0) > 0);
 }
 
 function headline(batch: Batch): string {

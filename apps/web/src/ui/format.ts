@@ -1,4 +1,16 @@
+import { formatCents } from "@subtitle-translator/pricing";
+
 /** The small formatting decisions the whole interface shares. */
+
+/**
+ * Money the way the specification writes it in prose: a whole amount is "$5",
+ * anything else keeps its cents. Prices in tables always keep both digits, so
+ * columns line up; this is for sentences and buttons.
+ */
+export function formatDollars(cents: number): string {
+  const written = formatCents(cents);
+  return written.endsWith(".00") ? written.slice(0, -3) : written;
+}
 
 const FORMAT_NAMES: Record<string, string> = {
   srt: "SubRip",

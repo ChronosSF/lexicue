@@ -1,7 +1,7 @@
 import type { Lane } from "@subtitle-translator/pricing";
 import { DEFAULT_TRANSLATION_OPTIONS, type TranslationOptions } from "@subtitle-translator/shared";
 import { MAX_FILES_PER_UPLOAD } from "@subtitle-translator/subtitles";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { intake, type LocalFile, type RawFile } from "../features/upload/local-files.js";
 
 /**
@@ -31,13 +31,20 @@ const DraftContext = createContext<UploadDraft | null>(null);
 export function DraftProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const [files, setFiles] = useState<LocalFile[]>([]);
   const [ignored, setIgnored] = useState<string[]>([]);
+  const ignoredNames = useRef<string[]>([]);
   const [targetLanguage, setTargetLanguage] = useState<string | null>(null);
   const [lane, setLane] = useState<Lane>("fast");
   const [options, setOptions] = useState<TranslationOptions>(DEFAULT_TRANSLATION_OPTIONS);
 
   const addFiles = useCallback((raw: RawFile[]) => {
     setFiles((current) => {
-      const result = intake(raw, current);
+      // Names already seen, ignored entries included: a `.idx` dropped a moment
+      // before its `.sub` still has to mark that `.sub` as image-based.
+      const result = intake(raw, [
+        ...current.map((file) => file.fileName),
+        ...ignoredNames.current,
+      ]);
+      ignoredNames.current = [...ignoredNames.current, ...result.ignored];
       setIgnored((seen) => [...seen, ...result.ignored]);
       // The cap is a product limit, not a suggestion (spec section 3.2).
       return [...current, ...result.files].slice(0, MAX_FILES_PER_UPLOAD);
@@ -51,6 +58,7 @@ export function DraftProvider({ children }: { children: React.ReactNode }): Reac
   const clear = useCallback(() => {
     setFiles([]);
     setIgnored([]);
+    ignoredNames.current = [];
   }, []);
 
   const value = useMemo<UploadDraft>(

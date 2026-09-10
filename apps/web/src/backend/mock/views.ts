@@ -53,7 +53,9 @@ export function toJobView(job: StoredJob, now: number, urls: DownloadUrls): Job 
         }))
       : null,
     report: job.report,
-    error: job.failReason,
+    // The sentence belongs to a file that has failed, not to one that is going
+    // to: a queued row must not announce its own refund in advance.
+    error: job.status === "failed" ? job.failReason : null,
     createdAt: new Date(job.createdAt).toISOString(),
     finishedAt: job.finishedAt === null ? null : new Date(job.finishedAt).toISOString(),
   };

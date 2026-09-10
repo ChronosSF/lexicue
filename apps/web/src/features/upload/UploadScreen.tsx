@@ -110,6 +110,11 @@ export function UploadScreen(): React.JSX.Element {
         <SampleTray onFiles={draft.addFiles} />
       ) : (
         <>
+          <details className="upload-samples">
+            <summary>Add another sample file</summary>
+            <SampleTray onFiles={draft.addFiles} />
+          </details>
+
           <section className="stack">
             <div className="upload-summary row">
               <h2 className="card-title">

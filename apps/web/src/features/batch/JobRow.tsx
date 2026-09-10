@@ -97,7 +97,7 @@ function JobStatus({ job, percent }: { job: Job; percent: number }): React.JSX.E
       return (
         <span className="chip chip-ok">
           {job.report !== null && job.report.untranslatedCues.length > 0
-            ? `${formatCount(job.report.translatedCues)} of ${formatCount(job.report.totalCues)} cues`
+            ? `${formatCount(job.report.translatedCues)} of ${formatCount(job.report.totalCues)} cues translated`
             : "Translated"}
         </span>
       );

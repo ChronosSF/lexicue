@@ -1,5 +1,5 @@
 import { formatCents } from "@subtitle-translator/pricing";
-import { pluralise } from "../../ui/format.js";
+import { formatDollars, pluralise } from "../../ui/format.js";
 import "./ConfirmBar.css";
 
 export interface Shortfall {
@@ -63,7 +63,7 @@ export function ConfirmBar({
               onTopUp(shortfall.suggestedTopUpCents);
             }}
           >
-            Top up {formatCents(shortfall.suggestedTopUpCents)} and translate
+            Top up {formatDollars(shortfall.suggestedTopUpCents)} and translate
           </button>
         ) : (
           <button
