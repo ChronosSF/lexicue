@@ -3,9 +3,16 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "types": []
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "dist"],
-  "references": [{ "path": "../subtitles" }, { "path": "../pricing" }]
+  "exclude": ["dist"],
+  "references": [
+    {
+      "path": "../subtitles"
+    },
+    {
+      "path": "../pricing"
+    }
+  ]
 }

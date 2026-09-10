@@ -6,10 +6,16 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "dist"],
+  "exclude": ["dist"],
   "references": [
-    { "path": "../packages/subtitles" },
-    { "path": "../packages/pricing" },
-    { "path": "../packages/harness" }
+    {
+      "path": "../packages/subtitles"
+    },
+    {
+      "path": "../packages/pricing"
+    },
+    {
+      "path": "../packages/harness"
+    }
   ]
 }

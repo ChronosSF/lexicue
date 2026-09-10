@@ -64,6 +64,8 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
     rules: {
       "@typescript-eslint/explicit-module-boundary-types": "off",
+      "no-restricted-imports": "off",
+      "no-restricted-globals": "off",
     },
   },
   {
