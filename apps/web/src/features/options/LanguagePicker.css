@@ -1,0 +1,58 @@
+.language-picker {
+  position: relative;
+}
+
+.language-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.language-list {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  max-height: 17rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.language-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 0.35rem var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.language-option.is-active {
+  background: var(--surface-sunken);
+}
+
+.language-option.is-chosen {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.language-code {
+  font-size: var(--text-xs);
+}
+
+.language-empty {
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+}

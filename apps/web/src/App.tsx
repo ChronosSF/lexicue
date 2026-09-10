@@ -1,10 +1,12 @@
 import "./App.css";
 import { BackendProvider, useBackend } from "./app/backend.js";
+import { DraftProvider } from "./app/draft.js";
 import { useMe, useResetDemo, useSession, useSignOut } from "./app/queries.js";
-import { useRoute } from "./app/routes.js";
+import { useRoute, type Route } from "./app/routes.js";
 import type { BackendAdapter } from "./backend/types.js";
 import { SignInScreen } from "./features/auth/SignInScreen.js";
 import { UploadScreen } from "./features/upload/UploadScreen.js";
+import { CheckoutScreen } from "./features/wallet/CheckoutScreen.js";
 import { AppHeader } from "./ui/AppHeader.js";
 import type { MenuItem } from "./ui/Menu.js";
 
@@ -16,21 +18,24 @@ import type { MenuItem } from "./ui/Menu.js";
 export function App({ backend }: { backend?: BackendAdapter }): React.JSX.Element {
   return (
     <BackendProvider {...(backend === undefined ? {} : { backend })}>
-      <Shell />
+      <DraftProvider>
+        <Shell />
+      </DraftProvider>
     </BackendProvider>
   );
 }
 
 function Shell(): React.JSX.Element {
   const backend = useBackend();
-  const { navigate } = useRoute();
+  const { route, navigate } = useRoute();
   const session = useSession();
   const signedIn = session.data ?? null;
-  const me = useMe(signedIn?.emailVerified === true);
+  const verified = signedIn?.emailVerified === true;
+  const me = useMe(verified);
   const signOut = useSignOut();
   const reset = useResetDemo();
 
-  const menuItems: MenuItem[] = signedIn === null ? [] : buildMenu();
+  const menuItems: MenuItem[] = verified ? buildMenu() : [];
 
   function buildMenu(): MenuItem[] {
     const items: MenuItem[] = [];
@@ -66,9 +71,6 @@ function Shell(): React.JSX.Element {
             ? null
             : { balanceCents: me.data.balanceCents, freeCents: me.data.freeCents }
         }
-        onOpenWallet={() => {
-          navigate({ name: "wallet" });
-        }}
         menuItems={menuItems}
         {...(backend.kind === "mock" ? { demoBadge: "Demo" } : {})}
       />
@@ -76,10 +78,10 @@ function Shell(): React.JSX.Element {
       <main className="container main">
         {session.isPending ? (
           <p className="muted">Loading…</p>
-        ) : !signedIn?.emailVerified ? (
+        ) : !verified ? (
           <SignInScreen session={signedIn} />
         ) : (
-          <UploadScreen />
+          <Screen route={route} />
         )}
       </main>
 
@@ -91,4 +93,16 @@ function Shell(): React.JSX.Element {
       </footer>
     </div>
   );
+}
+
+function Screen({ route }: { route: Route }): React.JSX.Element {
+  switch (route.name) {
+    case "checkout":
+      return <CheckoutScreen sessionId={route.sessionId} amountCents={route.amountCents} />;
+    case "batch":
+    case "wallet":
+    case "history":
+    case "translate":
+      return <UploadScreen />;
+  }
 }

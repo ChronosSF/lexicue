@@ -12,13 +12,15 @@ export type Route =
   | { name: "batch"; batchId: string }
   | { name: "wallet" }
   | { name: "history" }
-  | { name: "checkout"; sessionId: string };
+  | { name: "checkout"; sessionId: string; amountCents: number };
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
-  const [head, tail] = parts;
+  const [head, tail, extra] = parts;
   if (head === "batch" && tail !== undefined) return { name: "batch", batchId: tail };
-  if (head === "checkout" && tail !== undefined) return { name: "checkout", sessionId: tail };
+  if (head === "checkout" && tail !== undefined) {
+    return { name: "checkout", sessionId: tail, amountCents: Number(extra ?? 0) };
+  }
   if (head === "wallet") return { name: "wallet" };
   if (head === "history") return { name: "history" };
   return { name: "translate" };
@@ -35,7 +37,7 @@ export function hashFor(route: Route): string {
     case "history":
       return "#/history";
     case "checkout":
-      return `#/checkout/${route.sessionId}`;
+      return `#/checkout/${route.sessionId}/${route.amountCents.toString()}`;
   }
 }
 

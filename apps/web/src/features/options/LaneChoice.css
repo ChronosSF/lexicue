@@ -1,0 +1,68 @@
+.lane-choice {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lane-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-3);
+}
+
+.lane-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.lane-card:hover {
+  border-color: var(--border-strong);
+}
+
+.lane-card:has(input:focus-visible) {
+  box-shadow: var(--ring);
+}
+
+.lane-card.is-chosen {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.lane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.lane-name {
+  font-weight: 650;
+}
+
+.lane-price {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.lane-delivery {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.lane-note,
+.lane-rate {
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}

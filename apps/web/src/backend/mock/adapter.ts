@@ -601,7 +601,7 @@ export class MockBackend implements BackendAdapter {
     return {
       // Stripe's hosted page in the deployed system; the demo's own checkout
       // screen here, which is a route inside this app.
-      checkoutUrl: `#/checkout/${sessionId}`,
+      checkoutUrl: `#/checkout/${sessionId}/${request.amountCents.toString()}`,
       sessionId,
       amountCents: request.amountCents,
     };

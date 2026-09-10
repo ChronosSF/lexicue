@@ -1,41 +1,99 @@
-import { formatCents, type Lane } from "@subtitle-translator/pricing";
+import { formatCents } from "@subtitle-translator/pricing";
+import { ApiError, isInsufficientBalance } from "@subtitle-translator/shared";
 import { MAX_FILES_PER_UPLOAD } from "@subtitle-translator/subtitles";
 import { useState } from "react";
+import { useDraft } from "../../app/draft.js";
+import { useCreateBatch, useLanguages, useMe, usePricing, useTopUp } from "../../app/queries.js";
+import { useRoute } from "../../app/routes.js";
 import { joinWords, pluralise } from "../../ui/format.js";
+import { LaneChoice } from "../options/LaneChoice.js";
+import { LanguagePicker } from "../options/LanguagePicker.js";
+import { OptionsPanel } from "../options/OptionsPanel.js";
+import { ConfirmBar, type Shortfall } from "./ConfirmBar.js";
 import { Dropzone } from "./Dropzone.js";
 import { FileTable } from "./FileTable.js";
 import { SampleTray } from "./SampleTray.js";
 import "./UploadScreen.css";
-import { intake, totalCents, usableFiles, type LocalFile, type RawFile } from "./local-files.js";
+import { totalCents, usableFiles } from "./local-files.js";
 
 /**
  * The upload state of spec section 2: drop files, see exactly what the app
- * understood and what it will cost, take out anything unusable, and go on to
- * the language and the lane.
+ * understood and what it will cost, take out anything unusable, choose a
+ * language and a lane, and confirm a price that cannot change afterwards.
  */
 export function UploadScreen(): React.JSX.Element {
-  const [files, setFiles] = useState<LocalFile[]>([]);
-  const [ignored, setIgnored] = useState<string[]>([]);
-  const lane: Lane = "fast";
+  const draft = useDraft();
+  const { navigate } = useRoute();
+  const me = useMe();
+  const pricing = usePricing();
+  const languages = useLanguages();
+  const createBatch = useCreateBatch();
+  const topUp = useTopUp();
+  const [failure, setFailure] = useState<ApiError | null>(null);
 
-  const add = (raw: RawFile[]): void => {
-    setFiles((current) => {
-      const result = intake(raw, current);
-      setIgnored(result.ignored);
-      return [...current, ...result.files].slice(0, MAX_FILES_PER_UPLOAD);
-    });
+  const usable = usableFiles(draft.files);
+  const problems = draft.files.length - usable.length;
+  const totals = {
+    fast: totalCents(usable, "fast"),
+    economy: totalCents(usable, "economy"),
+  };
+  const total = totals[draft.lane];
+  const balanceCents = me.data?.balanceCents ?? 0;
+
+  const shortfall: Shortfall | null =
+    usable.length > 0 && balanceCents < total
+      ? {
+          shortfallCents: total - balanceCents,
+          suggestedTopUpCents: smallestTopUpFor(
+            total - balanceCents,
+            pricing.data?.topUpAmountsCents ?? [500, 1000, 2500],
+          ),
+        }
+      : failureShortfall(failure);
+
+  const blockedBecause =
+    usable.length === 0
+      ? "Add a subtitle file to begin."
+      : draft.targetLanguage === null
+        ? "Choose a target language."
+        : null;
+
+  const translate = (): void => {
+    if (draft.targetLanguage === null) return;
+    setFailure(null);
+    createBatch.mutate(
+      {
+        files: usable.map((file) => ({ fileName: file.fileName, bytes: file.bytes })),
+        targetLanguage: draft.targetLanguage,
+        lane: draft.lane,
+        options: draft.options,
+      },
+      {
+        onSuccess: (batch) => {
+          draft.clear();
+          navigate({ name: "batch", batchId: batch.batchId });
+        },
+        onError: (error) => {
+          if (error instanceof ApiError) setFailure(error);
+        },
+      },
+    );
   };
 
-  const remove = (id: string): void => {
-    setFiles((current) => current.filter((file) => file.id !== id));
+  const startTopUp = (amountCents: number): void => {
+    topUp.mutate(
+      { amountCents },
+      {
+        onSuccess: (session) => {
+          navigate(session.checkoutUrl);
+        },
+      },
+    );
   };
-
-  const usable = usableFiles(files);
-  const problems = files.length - usable.length;
 
   return (
     <div className="upload stack-lg">
-      {files.length === 0 ? (
+      {draft.files.length === 0 ? (
         <section className="hero stack">
           <h1>Translate a subtitle file, or a whole season.</h1>
           <p className="hero-lead">
@@ -46,49 +104,131 @@ export function UploadScreen(): React.JSX.Element {
         </section>
       ) : null}
 
-      <Dropzone onFiles={add} compact={files.length > 0} />
+      <Dropzone onFiles={draft.addFiles} compact={draft.files.length > 0} />
 
-      {files.length === 0 ? (
-        <SampleTray onFiles={add} />
+      {draft.files.length === 0 ? (
+        <SampleTray onFiles={draft.addFiles} />
       ) : (
-        <section className="stack">
-          <div className="upload-summary row">
-            <h2 className="card-title">
-              {pluralise(usable.length, "file")}
-              {problems > 0 ? (
-                <span className="chip chip-danger upload-problem-count">
-                  {pluralise(problems, "file")} cannot be translated
-                </span>
-              ) : null}
-            </h2>
-            <div className="spacer" />
-            <span className="muted">
-              {formatCents(totalCents(usable, lane))} on the fast lane ·{" "}
-              {formatCents(totalCents(usable, "economy"))} on the economy lane
-            </span>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => {
-                setFiles([]);
-                setIgnored([]);
-              }}
-            >
-              Start again
-            </button>
-          </div>
+        <>
+          <section className="stack">
+            <div className="upload-summary row">
+              <h2 className="card-title">
+                {pluralise(usable.length, "file")}
+                {problems > 0 ? (
+                  <span className="chip chip-danger upload-problem-count">
+                    {pluralise(problems, "file")} cannot be translated
+                  </span>
+                ) : null}
+              </h2>
+              <div className="spacer" />
+              <span className="muted">
+                {formatCents(totals.fast)} fast · {formatCents(totals.economy)} economy
+              </span>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => {
+                  draft.clear();
+                  setFailure(null);
+                }}
+              >
+                Start again
+              </button>
+            </div>
 
-          <FileTable files={files} lane={lane} onRemove={remove} />
+            <FileTable files={draft.files} lane={draft.lane} onRemove={draft.removeFile} />
 
-          {ignored.length > 0 ? (
-            <p className="hint">
-              Ignored {joinWords(ignored.slice(0, 4))}
-              {ignored.length > 4 ? ` and ${(ignored.length - 4).toString()} more` : ""}: only
-              SubRip and the two `.sub` dialects can be translated.
-            </p>
+            {draft.files.length >= MAX_FILES_PER_UPLOAD ? (
+              <p className="hint">
+                An upload carries {MAX_FILES_PER_UPLOAD} files at a time; the rest go in a second
+                upload.
+              </p>
+            ) : null}
+
+            {draft.ignored.length > 0 ? (
+              <p className="hint">
+                Ignored {joinWords(draft.ignored.slice(0, 4))}
+                {draft.ignored.length > 4
+                  ? ` and ${(draft.ignored.length - 4).toString()} more`
+                  : ""}
+                : only SubRip and the two .sub dialects can be translated.
+              </p>
+            ) : null}
+          </section>
+
+          <section className="card card-pad choices">
+            <div className="choices-column">
+              <LanguagePicker
+                languages={languages.data?.languages ?? []}
+                value={draft.targetLanguage}
+                onChange={draft.setTargetLanguage}
+              />
+              <LaneChoice
+                rates={pricing.data?.rates ?? []}
+                value={draft.lane}
+                totals={totals}
+                onChange={draft.setLane}
+              />
+            </div>
+            <div className="choices-column">
+              <OptionsPanel options={draft.options} onChange={draft.setOptions} />
+            </div>
+          </section>
+
+          {failure !== null && !isInsufficientBalance(failure) ? (
+            <UploadFailure error={failure} />
           ) : null}
-        </section>
+
+          <ConfirmBar
+            fileCount={usable.length}
+            totalCents={total}
+            balanceCents={balanceCents}
+            shortfall={shortfall}
+            blockedBecause={blockedBecause}
+            pending={createBatch.isPending || topUp.isPending}
+            error={
+              shortfall === null
+                ? null
+                : `Your balance is ${formatCents(balanceCents)}, which is ${formatCents(
+                    shortfall.shortfallCents,
+                  )} short of this upload.`
+            }
+            onTranslate={translate}
+            onTopUp={startTopUp}
+          />
+        </>
       )}
     </div>
   );
+}
+
+/** The 422s of spec section 7.3, as the sentences they carry. */
+function UploadFailure({ error }: { error: ApiError }): React.JSX.Element {
+  return (
+    <section className="card card-pad upload-failure">
+      <p className="problem">{error.message}</p>
+      {error.is("unusable-files") ? (
+        <ul className="upload-failure-list">
+          {error.body.files.map((file) => (
+            <li key={file.fileName}>
+              <strong>{file.fileName}</strong> {file.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function failureShortfall(error: ApiError | null): Shortfall | null {
+  if (error === null || !isInsufficientBalance(error)) return null;
+  return {
+    shortfallCents: error.body.shortfallCents,
+    suggestedTopUpCents: error.body.suggestedTopUpCents,
+  };
+}
+
+function smallestTopUpFor(shortfallCents: number, amounts: readonly number[]): number {
+  const sorted = [...amounts].sort((a, b) => a - b);
+  return sorted.find((amount) => amount >= shortfallCents) ?? sorted.at(-1) ?? 0;
 }

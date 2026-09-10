@@ -20,7 +20,8 @@ export function AppHeader({
   demoBadge,
 }: {
   balance: HeaderBalance | null;
-  onOpenWallet: () => void;
+  /** Omitted where the wallet screen is not reachable. */
+  onOpenWallet?: () => void;
   menuItems: MenuItem[];
   demoBadge?: string;
 }): React.JSX.Element {
@@ -36,13 +37,10 @@ export function AppHeader({
         <div className="spacer" />
 
         {balance === null ? null : (
-          <button type="button" className="balance" onClick={onOpenWallet}>
-            <span className="balance-label">Balance</span>
-            <span className="balance-amount num">{formatCents(balance.balanceCents)}</span>
-            {balance.freeCents > 0 ? (
-              <span className="chip chip-accent">{formatCents(balance.freeCents)} free credit</span>
-            ) : null}
-          </button>
+          <BalancePill
+            balance={balance}
+            {...(onOpenWallet === undefined ? {} : { onOpenWallet })}
+          />
         )}
 
         {menuItems.length === 0 ? null : (
@@ -55,5 +53,30 @@ export function AppHeader({
         )}
       </div>
     </header>
+  );
+}
+
+function BalancePill({
+  balance,
+  onOpenWallet,
+}: {
+  balance: HeaderBalance;
+  onOpenWallet?: () => void;
+}): React.JSX.Element {
+  const content = (
+    <>
+      <span className="balance-label">Balance</span>
+      <span className="balance-amount num">{formatCents(balance.balanceCents)}</span>
+      {balance.freeCents > 0 ? (
+        <span className="chip chip-accent">{formatCents(balance.freeCents)} free credit</span>
+      ) : null}
+    </>
+  );
+  return onOpenWallet === undefined ? (
+    <span className="balance">{content}</span>
+  ) : (
+    <button type="button" className="balance" onClick={onOpenWallet}>
+      {content}
+    </button>
   );
 }

@@ -38,9 +38,12 @@ export function useSession(): UseQueryResult<Session | null> {
   return useQuery({ queryKey: keys.session, queryFn: () => backend.getSession() });
 }
 
-export function useMe(enabled = true): UseQueryResult<MeResponse> {
+export function useMe(
+  enabled = true,
+  refetchInterval: number | false = false,
+): UseQueryResult<MeResponse> {
   const backend = useBackend();
-  return useQuery({ queryKey: keys.me, queryFn: () => backend.getMe(), enabled });
+  return useQuery({ queryKey: keys.me, queryFn: () => backend.getMe(), enabled, refetchInterval });
 }
 
 export function usePricing(): UseQueryResult<PricingResponse> {
