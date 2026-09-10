@@ -1,0 +1,144 @@
+{
+  "note": "Every file here was written for this project. Nothing is copied from a real film or a real subtitle release.",
+  "files": [
+    {
+      "path": "comedy/the-lamp-room.srt",
+      "title": "The Lamp Room",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "covers": [
+        "two-speaker cues",
+        "italics",
+        "a positioning override",
+        "a running joke"
+      ]
+    },
+    {
+      "path": "drama/the-last-tender.srt",
+      "title": "The Last Tender",
+      "genre": "drama",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "covers": [
+        "long silences",
+        "radio procedure",
+        "register shifts"
+      ]
+    },
+    {
+      "path": "documentary/the-keepers.srt",
+      "title": "The Keepers",
+      "genre": "documentary",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "covers": [
+        "dates and numbers",
+        "interview register",
+        "narration versus speech"
+      ]
+    },
+    {
+      "path": "hearing-impaired/the-lamp-room.hi.srt",
+      "title": "The Lamp Room (hearing impaired)",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "hearingImpaired": true,
+      "covers": [
+        "bracketed sound descriptions",
+        "speaker labels",
+        "music notes and lyrics"
+      ]
+    },
+    {
+      "path": "german/der-leuchtturm.srt",
+      "title": "Der Leuchtturm",
+      "genre": "comedy",
+      "sourceLanguage": "de",
+      "format": "srt",
+      "covers": [
+        "a German source",
+        "T-V distinction in the source"
+      ]
+    },
+    {
+      "path": "spanish/el-faro.srt",
+      "title": "El Faro",
+      "genre": "comedy",
+      "sourceLanguage": "es",
+      "format": "srt",
+      "covers": [
+        "a Spanish source",
+        "inverted punctuation"
+      ]
+    },
+    {
+      "path": "formats/the-lamp-room.microdvd.sub",
+      "title": "The Lamp Room (MicroDVD)",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "microdvd",
+      "sameDialogueAs": "comedy/the-lamp-room.srt",
+      "covers": [
+        "frame-based timings",
+        "control codes",
+        "pipe line breaks"
+      ]
+    },
+    {
+      "path": "formats/the-lamp-room.subviewer.sub",
+      "title": "The Lamp Room (SubViewer)",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "subviewer",
+      "sameDialogueAs": "comedy/the-lamp-room.srt",
+      "covers": [
+        "an information block",
+        "[br] line breaks"
+      ]
+    },
+    {
+      "path": "season/skerry-point-s01e01.srt",
+      "title": "Skerry Point 1.1",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "season": "skerry-point",
+      "episode": 1,
+      "covers": [
+        "the shared characters Marta and Ivo",
+        "the term the Light",
+        "the gulls joke"
+      ]
+    },
+    {
+      "path": "season/skerry-point-s01e02.srt",
+      "title": "Skerry Point 1.2",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "season": "skerry-point",
+      "episode": 2,
+      "covers": [
+        "Petar, introduced late in the episode",
+        "the stairs joke",
+        "the tender"
+      ]
+    },
+    {
+      "path": "season/skerry-point-s01e03.srt",
+      "title": "Skerry Point 1.3",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "season": "skerry-point",
+      "episode": 3,
+      "covers": [
+        "Petar again",
+        "all three running jokes",
+        "cross-episode consistency"
+      ]
+    }
+  ]
+}

@@ -15,6 +15,7 @@
   "dependencies": {
     "@subtitle-translator/harness": "workspace:*",
     "@subtitle-translator/pricing": "workspace:*",
-    "@subtitle-translator/subtitles": "workspace:*"
+    "@subtitle-translator/subtitles": "workspace:*",
+    "zod": "4.6.1"
   }
 }

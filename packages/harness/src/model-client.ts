@@ -16,8 +16,12 @@ export interface PromptBlock {
   cacheControl?: { ttl: CacheTtl };
 }
 
-/** What the request is for; carried through to logs, reports and fault injection. */
-export type RequestPurpose = "season-glossary" | "glossary" | "batch";
+/**
+ * What the request is for; carried through to logs, reports and fault
+ * injection. "judge" is the eval runner's scoring call, which uses the same
+ * client interface but never runs inside the product.
+ */
+export type RequestPurpose = "season-glossary" | "glossary" | "batch" | "judge";
 
 /**
  * A single model call, in the harness's own terms. Everything the concrete
