@@ -1,4 +1,5 @@
 import { FidelityError } from "./errors.js";
+import { restoreLines } from "./formats/common.js";
 import { parseSubtitleText } from "./parse.js";
 import { serialiseSubtitleDocument } from "./serialise.js";
 import type { SubtitleDocument } from "./types.js";
@@ -58,5 +59,34 @@ export function serialiseAndVerify(
     ...(translated.frameRate === undefined ? {} : { defaultFrameRate: translated.frameRate }),
   });
   assertStructuralFidelity(source, reparsed);
+  assertLinesSurvivedSerialisation(translated, reparsed);
   return { text, reparsed };
+}
+
+/**
+ * The structural comparison above proves the cues, indices and timings came
+ * back. This proves the text did too: a translation that contains a blank line,
+ * a MicroDVD pipe or a SubViewer `[br]` would be silently re-cut by the format
+ * on the way back in, dropping or splitting lines that the cue-level comparison
+ * cannot see.
+ */
+function assertLinesSurvivedSerialisation(
+  translated: SubtitleDocument,
+  reparsed: SubtitleDocument,
+): void {
+  for (const [index, cue] of translated.cues.entries()) {
+    const back = reparsed.cues[index];
+    const before = restoreLines(cue);
+    const after = back === undefined ? [] : restoreLines(back);
+    if (before.length !== after.length || before.some((line, i) => line !== after[i])) {
+      throw new FidelityError(
+        `the text of cue ${cue.id.toString()} did not survive serialisation: wrote ${JSON.stringify(before)} but read back ${JSON.stringify(after)}`,
+      );
+    }
+  }
+  if (reparsed.warnings.length > 0) {
+    throw new FidelityError(
+      `re-parsing the output produced warnings: ${reparsed.warnings.join(" ")}`,
+    );
+  }
 }

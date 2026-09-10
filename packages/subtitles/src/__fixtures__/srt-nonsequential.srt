@@ -1,0 +1,12 @@
+1
+00:00:01,000 --> 00:00:03,240
+Numbering starts here.
+
+5
+00:00:03,400 --> 00:00:06,120
+Then jumps to five.
+
+5
+00:00:06,300 --> 00:00:08,000
+And repeats itself.
+

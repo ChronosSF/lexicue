@@ -45,22 +45,22 @@ export function parseSubViewer(lines: readonly string[]): FormatParseResult {
   const warnings: string[] = [];
 
   for (const block of readBlocks(lines.slice(headerEnd))) {
-    const rawTimingLine = block.lines[0] ?? "";
-    if (!isSubViewerTimingLine(rawTimingLine)) {
+    const [rawTimingLine = "", ...rest] = block.lines;
+    const timing = parseSubViewerTiming(rawTimingLine);
+    if (timing === null) {
       warnings.push(
         `Ignored ${block.lines.length.toString()} line(s) at line ${(headerEnd + block.start + 1).toString()} that were not part of a cue.`,
       );
       continue;
     }
-    const timing = parseSubViewerTiming(rawTimingLine);
-    const textLines = block.lines.slice(1).flatMap((line) => line.split(SUBVIEWER_BREAK));
+    const textLines = rest.flatMap((line) => line.split(SUBVIEWER_BREAK));
     const { linePrefixCodes, lines: cueLines } = protectLines(textLines);
     cues.push({
       id: cues.length + 1,
       rawIndexLine: null,
       rawTimingLine,
-      startMs: timing?.startMs ?? 0,
-      endMs: timing?.endMs ?? 0,
+      startMs: timing.startMs,
+      endMs: timing.endMs,
       prefixCodes: linePrefixCodes[0] ?? "",
       linePrefixCodes,
       lines: cueLines,

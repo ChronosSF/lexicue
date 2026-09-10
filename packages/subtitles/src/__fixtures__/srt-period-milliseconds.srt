@@ -1,0 +1,8 @@
+1
+00:00:01.000 --> 00:00:03.240
+A period instead of a comma.
+
+2
+00:00:03.400 --> 00:00:06.120
+Written by an editor in a hurry.
+

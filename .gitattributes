@@ -3,3 +3,8 @@
 *.jpg binary
 *.sup binary
 *.bin binary
+
+# Golden fixtures and eval corpus files are compared byte for byte, so git must
+# not touch their line endings or add a mark.
+packages/subtitles/src/__fixtures__/** -text
+evals/corpus/** -text

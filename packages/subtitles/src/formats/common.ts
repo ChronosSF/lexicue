@@ -20,19 +20,17 @@ export interface Block {
 /** Splits lines into blank-line separated blocks, ignoring extra blank lines. */
 export function readBlocks(lines: readonly string[]): Block[] {
   const blocks: Block[] = [];
-  let index = 0;
-  while (index < lines.length) {
-    if (isBlank(lines[index] ?? "")) {
-      index += 1;
+  let current: Block | null = null;
+  for (const [index, line] of lines.entries()) {
+    if (isBlank(line)) {
+      current = null;
       continue;
     }
-    const start = index;
-    const collected: string[] = [];
-    while (index < lines.length && !isBlank(lines[index] ?? "")) {
-      collected.push(lines[index] ?? "");
-      index += 1;
+    if (current === null) {
+      current = { start: index, lines: [] };
+      blocks.push(current);
     }
-    blocks.push({ start, lines: collected });
+    current.lines.push(line);
   }
   return blocks;
 }
@@ -52,7 +50,6 @@ export function joinBlocks(
   eol: string,
   trailingNewline: boolean,
 ): string {
-  if (blocks.length === 0) return trailingNewline ? eol : "";
   return blocks.map((block) => block + eol).join(eol) + (trailingNewline ? eol : "");
 }
 

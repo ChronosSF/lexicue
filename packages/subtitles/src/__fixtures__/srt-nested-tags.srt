@@ -1,0 +1,12 @@
+1
+00:00:01,000 --> 00:00:03,240
+<i><b>Everything</b> is fine.</i>
+
+2
+00:00:03,400 --> 00:00:06,120
+<font color="#ffff00">Careful,</font> that step is loose.
+
+3
+00:00:06,300 --> 00:00:08,000
+<u>Read the sign.</u>
+

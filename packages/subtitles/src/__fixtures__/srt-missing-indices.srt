@@ -1,0 +1,6 @@
+00:00:01,000 --> 00:00:03,240
+No index lines anywhere in this file.
+
+00:00:03,400 --> 00:00:06,120
+Players still read it, so we must too.
+

@@ -39,27 +39,26 @@ export function parseSrt(lines: readonly string[]): FormatParseResult {
   const warnings: string[] = [];
 
   for (const block of readBlocks(lines)) {
-    const timingIndex = block.lines.findIndex(isSrtTimingLine);
-    if (timingIndex === -1) {
+    const found = findTimingLine(block.lines);
+    if (found === null) {
       warnings.push(
         `Ignored ${block.lines.length.toString()} line(s) at line ${(block.start + 1).toString()} that were not part of a cue.`,
       );
       continue;
     }
-    if (timingIndex > 1) {
+    if (found.index > 1) {
+      const ignored = found.index - 1;
       warnings.push(
-        `Ignored ${timingIndex.toString()} stray line(s) before the timing line at line ${(block.start + timingIndex + 1).toString()}.`,
+        `Ignored ${ignored.toString()} stray line(s) before the timing line at line ${(block.start + found.index + 1).toString()}.`,
       );
     }
-    const rawTimingLine = block.lines[timingIndex] ?? "";
-    const timing = parseSrtTiming(rawTimingLine);
-    const { linePrefixCodes, lines: text } = protectLines(block.lines.slice(timingIndex + 1));
+    const { linePrefixCodes, lines: text } = protectLines(block.lines.slice(found.index + 1));
     cues.push({
       id: cues.length + 1,
-      rawIndexLine: timingIndex >= 1 ? (block.lines[timingIndex - 1] ?? null) : null,
-      rawTimingLine,
-      startMs: timing?.startMs ?? 0,
-      endMs: timing?.endMs ?? 0,
+      rawIndexLine: found.indexLine,
+      rawTimingLine: found.line,
+      startMs: found.timing.startMs,
+      endMs: found.timing.endMs,
       prefixCodes: linePrefixCodes[0] ?? "",
       linePrefixCodes,
       lines: text,
@@ -72,6 +71,24 @@ export function parseSrt(lines: readonly string[]): FormatParseResult {
     trailingNewline: blockTrailingNewline(lines),
     warnings,
   };
+}
+
+interface FoundTiming {
+  index: number;
+  line: string;
+  indexLine: string | null;
+  timing: { startMs: number; endMs: number };
+}
+
+/** The first timing line in a block, with the line above it, which is the index. */
+function findTimingLine(blockLines: readonly string[]): FoundTiming | null {
+  let previous: string | null = null;
+  for (const [index, line] of blockLines.entries()) {
+    const timing = parseSrtTiming(line);
+    if (timing !== null) return { index, line, indexLine: previous, timing };
+    previous = line;
+  }
+  return null;
 }
 
 export function serialiseSrt(doc: SubtitleDocument): string {

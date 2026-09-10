@@ -1,0 +1,13 @@
+1
+00:00:01,000 --> 00:00:03,240
+The lighthouse has been dark for a week.
+
+2
+00:00:03,400 --> 00:00:06,120
+- And nobody thought to call?
+- <i>We called.</i> Nobody answered.
+
+3
+00:00:06,300 --> 00:00:08,000
+{\an8}Then we row out at first light.
+
