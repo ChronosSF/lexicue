@@ -9,9 +9,11 @@ export default defineConfig({
     // and coverage is reported against the files under review.
     alias: {
       "@subtitle-translator/subtitles/encoding": src("./packages/subtitles/src/encoding/index.ts"),
+      "@subtitle-translator/subtitles/browser": src("./packages/subtitles/src/browser/index.ts"),
       "@subtitle-translator/subtitles": src("./packages/subtitles/src/index.ts"),
       "@subtitle-translator/pricing": src("./packages/pricing/src/index.ts"),
       "@subtitle-translator/harness": src("./packages/harness/src/index.ts"),
+      "@subtitle-translator/shared": src("./packages/shared/src/index.ts"),
     },
   },
   test: {
