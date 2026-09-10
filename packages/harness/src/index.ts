@@ -82,6 +82,7 @@ export {
   parseBatchRequest,
   type FakeClientOptions,
 } from "./clients/fake.js";
+export { AnthropicTranslationClient, type AnthropicClientOptions } from "./clients/anthropic.js";
 export {
   FaultInjectingModelClient,
   applyFault,
