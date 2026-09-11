@@ -1,4 +1,4 @@
-import { formatCents } from "@subtitle-translator/pricing";
+import { formatCents } from "@lexicue/pricing";
 import { formatDollars, pluralise } from "../../ui/format.js";
 import "./ConfirmBar.css";
 

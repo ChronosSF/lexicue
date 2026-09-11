@@ -1,5 +1,5 @@
 {
-  "name": "@subtitle-translator/shared",
+  "name": "@lexicue/shared",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,9 +14,9 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@subtitle-translator/harness": "workspace:*",
-    "@subtitle-translator/pricing": "workspace:*",
-    "@subtitle-translator/subtitles": "workspace:*",
+    "@lexicue/harness": "workspace:*",
+    "@lexicue/pricing": "workspace:*",
+    "@lexicue/subtitles": "workspace:*",
     "zod": "4.6.1"
   }
 }

@@ -1,4 +1,4 @@
-import type { Lane } from "@subtitle-translator/pricing";
+import type { Lane } from "@lexicue/pricing";
 import type { ModelUsage } from "./model-client.js";
 
 /** Dollars per million tokens (spec section 5.1, verified 9 September 2026). */

@@ -1,4 +1,4 @@
-import { parseSubtitleText } from "@subtitle-translator/subtitles";
+import { parseSubtitleText } from "@lexicue/subtitles";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_HARNESS_CONFIG } from "../config.js";
 import { findTargetLanguage } from "../languages.js";

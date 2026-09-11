@@ -1,4 +1,4 @@
-import type { TargetLanguage } from "@subtitle-translator/shared";
+import type { TargetLanguage } from "@lexicue/shared";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "./LanguagePicker.css";
 

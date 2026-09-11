@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { parseSubtitleText } from "@subtitle-translator/subtitles";
+import { parseSubtitleText } from "@lexicue/subtitles";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_HARNESS_CONFIG, resolveConfig } from "../config.js";
 import { ModelTransportError } from "../errors.js";

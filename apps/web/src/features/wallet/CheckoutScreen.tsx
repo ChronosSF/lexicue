@@ -1,4 +1,4 @@
-import { formatCents } from "@subtitle-translator/pricing";
+import { formatCents } from "@lexicue/pricing";
 import { useEffect, useState } from "react";
 import { useCompleteCheckout, useMe } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";

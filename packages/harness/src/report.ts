@@ -1,9 +1,5 @@
-import { priceCents, type Lane } from "@subtitle-translator/pricing";
-import {
-  cueDialogueChars,
-  stripMarkup,
-  type SubtitleDocument,
-} from "@subtitle-translator/subtitles";
+import { priceCents, type Lane } from "@lexicue/pricing";
+import { cueDialogueChars, stripMarkup, type SubtitleDocument } from "@lexicue/subtitles";
 import type { HarnessConfig } from "./config.js";
 import { costBreakdown, modelCostUsd, type CostBreakdown } from "./cost.js";
 import type { TargetLanguage } from "./languages.js";

@@ -7,7 +7,7 @@
  * glossary, no file — so that it is byte-identical on every request the product
  * ever makes and can sit at the front of the cached prefix.
  */
-export const PROMPT_VERSION = "subtitle-translator/system@v3";
+export const PROMPT_VERSION = "lexicue/system@v3";
 
 export const SYSTEM_PROMPT_V3 = `You are a professional subtitle translator.
 

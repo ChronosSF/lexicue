@@ -5,7 +5,7 @@ import { z } from "zod";
  * prompts are (spec sections 9.8 and 10.4). Changing it changes the version, so
  * a score is always comparable with the scores taken under the same rubric.
  */
-export const RUBRIC_VERSION = "subtitle-translator/judge@v1";
+export const RUBRIC_VERSION = "lexicue/judge@v1";
 
 export const JUDGE_RUBRIC = `You are grading subtitle translations. You see the source cue and the translation, with the surrounding cues for context, and you score each one on four axes from 1 to 5.
 

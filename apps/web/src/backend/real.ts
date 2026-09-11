@@ -24,7 +24,7 @@ import {
   type TopUpRequest,
   type TopUpResponse,
   type UploadTarget,
-} from "@subtitle-translator/shared";
+} from "@lexicue/shared";
 import type { z } from "zod";
 import type { BackendAdapter, Session } from "./types.js";
 
@@ -176,7 +176,7 @@ export class RealBackend implements BackendAdapter {
   }
 }
 
-const TOKEN_KEY = "subtitle-translator/id-token";
+const TOKEN_KEY = "lexicue/id-token";
 
 function defaultToken(): Promise<string | null> {
   return Promise.resolve(globalThis.sessionStorage.getItem(TOKEN_KEY));

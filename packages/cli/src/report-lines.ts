@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import { formatUsd, type FileReport, type UploadReport } from "@subtitle-translator/harness";
+import { formatCents } from "@lexicue/pricing";
+import { formatUsd, type FileReport, type UploadReport } from "@lexicue/harness";
 
 /** The per-file block the command line prints (spec section 9.9). */
 export function formatFileReport(report: FileReport, outputPath: string): string[] {

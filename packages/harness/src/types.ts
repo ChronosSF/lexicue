@@ -1,5 +1,5 @@
-import type { Lane } from "@subtitle-translator/pricing";
-import type { Cue, SubtitleDocument } from "@subtitle-translator/subtitles";
+import type { Lane } from "@lexicue/pricing";
+import type { Cue, SubtitleDocument } from "@lexicue/subtitles";
 import type { TargetLanguage } from "./languages.js";
 
 export type Formality = "auto" | "formal" | "informal";

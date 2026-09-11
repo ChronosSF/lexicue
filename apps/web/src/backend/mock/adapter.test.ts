@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { priceCents } from "@subtitle-translator/pricing";
-import { ApiError, DEFAULT_TRANSLATION_OPTIONS } from "@subtitle-translator/shared";
-import { parseSubtitleText } from "@subtitle-translator/subtitles";
+import { priceCents } from "@lexicue/pricing";
+import { ApiError, DEFAULT_TRANSLATION_OPTIONS } from "@lexicue/shared";
+import { parseSubtitleText } from "@lexicue/subtitles";
 import { unzipSync } from "fflate";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MockBackend, type MockBackendOptions } from "./adapter.js";

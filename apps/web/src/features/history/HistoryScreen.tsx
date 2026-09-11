@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import type { BatchSummary } from "@subtitle-translator/shared";
+import { formatCents } from "@lexicue/pricing";
+import type { BatchSummary } from "@lexicue/shared";
 import { useHistory } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";
 import { formatDateTime, joinWords, pluralise } from "../../ui/format.js";

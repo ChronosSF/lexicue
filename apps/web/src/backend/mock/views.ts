@@ -1,5 +1,5 @@
-import { DEFAULT_HARNESS_CONFIG } from "@subtitle-translator/harness";
-import type { Batch, BatchSummary, Job } from "@subtitle-translator/shared";
+import { DEFAULT_HARNESS_CONFIG } from "@lexicue/harness";
+import type { Batch, BatchSummary, Job } from "@lexicue/shared";
 import { buildZip, type DownloadUrls } from "./bytes.js";
 import { outputBytes } from "./translate.js";
 import type { MockState, MockTiming, StoredBatch, StoredJob } from "./state.js";

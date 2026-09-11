@@ -1,5 +1,5 @@
-import { priceCents } from "@subtitle-translator/pricing";
-import { parseSubtitleText, serialiseSubtitleDocument } from "@subtitle-translator/subtitles";
+import { priceCents } from "@lexicue/pricing";
+import { parseSubtitleText, serialiseSubtitleDocument } from "@lexicue/subtitles";
 import { describe, expect, it } from "vitest";
 import { collectEconomyBatch, planBatches, submitEconomyBatch } from "./batches.js";
 import { FakeTranslationModelClient } from "./clients/fake.js";

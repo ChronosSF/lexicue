@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { priceCents } from "@subtitle-translator/pricing";
+import { priceCents } from "@lexicue/pricing";
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { intake, totalCents, usableFiles, type RawFile } from "./local-files.js";

@@ -3,7 +3,7 @@ import {
   isSrtTimingLine,
   markupMultisetsEqual,
   stripMarkup,
-} from "@subtitle-translator/subtitles";
+} from "@lexicue/subtitles";
 import type { HarnessConfig } from "./config.js";
 import { looksUntranslated, type TargetLanguage } from "./languages.js";
 import { splitTranslatedLines } from "./prompts/render.js";

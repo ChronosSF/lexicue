@@ -1,4 +1,4 @@
-import { LANES } from "@subtitle-translator/pricing";
+import { LANES } from "@lexicue/pricing";
 import { z } from "zod";
 
 /**

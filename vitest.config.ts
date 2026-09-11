@@ -16,17 +16,13 @@ export default defineConfig({
       {
         resolve: {
           alias: {
-            "@subtitle-translator/subtitles/encoding": src(
-              "./packages/subtitles/src/encoding/index.ts",
-            ),
-            "@subtitle-translator/subtitles/browser": src(
-              "./packages/subtitles/src/browser/index.ts",
-            ),
-            "@subtitle-translator/subtitles": src("./packages/subtitles/src/index.ts"),
-            "@subtitle-translator/pricing": src("./packages/pricing/src/index.ts"),
-            "@subtitle-translator/harness": src("./packages/harness/src/index.ts"),
-            "@subtitle-translator/cli": src("./packages/cli/src/index.ts"),
-            "@subtitle-translator/shared": src("./packages/shared/src/index.ts"),
+            "@lexicue/subtitles/encoding": src("./packages/subtitles/src/encoding/index.ts"),
+            "@lexicue/subtitles/browser": src("./packages/subtitles/src/browser/index.ts"),
+            "@lexicue/subtitles": src("./packages/subtitles/src/index.ts"),
+            "@lexicue/pricing": src("./packages/pricing/src/index.ts"),
+            "@lexicue/harness": src("./packages/harness/src/index.ts"),
+            "@lexicue/cli": src("./packages/cli/src/index.ts"),
+            "@lexicue/shared": src("./packages/shared/src/index.ts"),
           },
         },
         test: {

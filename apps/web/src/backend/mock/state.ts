@@ -7,7 +7,7 @@ import type {
   SeasonGlossarySummary,
   SubtitleFormat,
   TranslationOptions,
-} from "@subtitle-translator/shared";
+} from "@lexicue/shared";
 
 /**
  * Everything the mock backend keeps. It is the browser's stand-in for the
@@ -19,7 +19,7 @@ import type {
  * the history and any file that has not yet passed its 24-hour deletion.
  */
 
-export const STORAGE_KEY = "subtitle-translator/demo";
+export const STORAGE_KEY = "lexicue/demo";
 export const STATE_VERSION = 1;
 
 /** One uploaded file, as base64 because `localStorage` holds strings. */

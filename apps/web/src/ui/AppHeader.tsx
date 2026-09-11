@@ -1,4 +1,4 @@
-import { formatCents } from "@subtitle-translator/pricing";
+import { formatCents } from "@lexicue/pricing";
 import "./AppHeader.css";
 import { Logo } from "./Logo.js";
 import { Menu, type MenuItem } from "./Menu.js";
@@ -30,7 +30,7 @@ export function AppHeader({
       <div className="container app-header-inner">
         <div className="brand">
           <Logo />
-          <span className="brand-name">Subtitle Translator</span>
+          <span className="brand-name">Lexicue</span>
           {demoBadge === undefined ? null : <span className="chip brand-badge">{demoBadge}</span>}
         </div>
 

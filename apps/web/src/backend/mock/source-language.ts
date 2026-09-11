@@ -1,4 +1,4 @@
-import { cuePlainText, type SubtitleDocument } from "@subtitle-translator/subtitles";
+import { cuePlainText, type SubtitleDocument } from "@lexicue/subtitles";
 
 /**
  * Spec section 3.3 refuses a job whose target language is the language the file

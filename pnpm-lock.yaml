@@ -56,16 +56,16 @@ importers:
       '@fontsource-variable/inter':
         specifier: 5.3.0
         version: 5.3.0
-      '@subtitle-translator/harness':
+      '@lexicue/harness':
         specifier: workspace:*
         version: link:../../packages/harness
-      '@subtitle-translator/pricing':
+      '@lexicue/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
-      '@subtitle-translator/shared':
+      '@lexicue/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@subtitle-translator/subtitles':
+      '@lexicue/subtitles':
         specifier: workspace:*
         version: link:../../packages/subtitles
       '@tanstack/react-query':
@@ -114,16 +114,16 @@ importers:
 
   evals:
     dependencies:
-      '@subtitle-translator/cli':
+      '@lexicue/cli':
         specifier: workspace:*
         version: link:../packages/cli
-      '@subtitle-translator/harness':
+      '@lexicue/harness':
         specifier: workspace:*
         version: link:../packages/harness
-      '@subtitle-translator/pricing':
+      '@lexicue/pricing':
         specifier: workspace:*
         version: link:../packages/pricing
-      '@subtitle-translator/subtitles':
+      '@lexicue/subtitles':
         specifier: workspace:*
         version: link:../packages/subtitles
       zod:
@@ -132,13 +132,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@subtitle-translator/harness':
+      '@lexicue/harness':
         specifier: workspace:*
         version: link:../harness
-      '@subtitle-translator/pricing':
+      '@lexicue/pricing':
         specifier: workspace:*
         version: link:../pricing
-      '@subtitle-translator/subtitles':
+      '@lexicue/subtitles':
         specifier: workspace:*
         version: link:../subtitles
 
@@ -147,10 +147,10 @@ importers:
       '@anthropic-ai/sdk':
         specifier: 0.124.0
         version: 0.124.0(zod@4.6.1)
-      '@subtitle-translator/pricing':
+      '@lexicue/pricing':
         specifier: workspace:*
         version: link:../pricing
-      '@subtitle-translator/subtitles':
+      '@lexicue/subtitles':
         specifier: workspace:*
         version: link:../subtitles
       zod:
@@ -161,13 +161,13 @@ importers:
 
   packages/shared:
     dependencies:
-      '@subtitle-translator/harness':
+      '@lexicue/harness':
         specifier: workspace:*
         version: link:../harness
-      '@subtitle-translator/pricing':
+      '@lexicue/pricing':
         specifier: workspace:*
         version: link:../pricing
-      '@subtitle-translator/subtitles':
+      '@lexicue/subtitles':
         specifier: workspace:*
         version: link:../subtitles
       zod:

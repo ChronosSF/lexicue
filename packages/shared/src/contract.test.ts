@@ -6,7 +6,7 @@ import {
   findTargetLanguage,
   type Formality as HarnessFormality,
   type LineHandling as HarnessLineHandling,
-} from "@subtitle-translator/harness";
+} from "@lexicue/harness";
 import {
   FREE_BALANCE_CENTS,
   LANES,
@@ -15,8 +15,8 @@ import {
   TOP_UP_AMOUNTS_CENTS,
   priceCents,
   type Lane as PricingLane,
-} from "@subtitle-translator/pricing";
-import { parseSubtitleText } from "@subtitle-translator/subtitles";
+} from "@lexicue/pricing";
+import { parseSubtitleText } from "@lexicue/subtitles";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   ApiError,

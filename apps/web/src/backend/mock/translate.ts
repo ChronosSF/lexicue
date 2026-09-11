@@ -6,9 +6,9 @@ import {
   type TranslatedFile,
   type TranslationJob,
   type TranslationOptions as HarnessOptions,
-} from "@subtitle-translator/harness";
-import { serialiseSubtitleDocument, type SubtitleDocument } from "@subtitle-translator/subtitles";
-import type { SeasonGlossarySummary, TranslationOptions } from "@subtitle-translator/shared";
+} from "@lexicue/harness";
+import { serialiseSubtitleDocument, type SubtitleDocument } from "@lexicue/subtitles";
+import type { SeasonGlossarySummary, TranslationOptions } from "@lexicue/shared";
 
 /**
  * The mock backend's translation step. It is the real harness — season

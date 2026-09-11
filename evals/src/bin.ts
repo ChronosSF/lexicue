@@ -3,12 +3,9 @@ import { join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { loadEnvFile } from "@subtitle-translator/cli";
-import { isLane } from "@subtitle-translator/pricing";
-import {
-  AnthropicTranslationClient,
-  type TranslationModelClient,
-} from "@subtitle-translator/harness";
+import { loadEnvFile } from "@lexicue/cli";
+import { isLane } from "@lexicue/pricing";
+import { AnthropicTranslationClient, type TranslationModelClient } from "@lexicue/harness";
 import { EVAL_TARGETS } from "./corpus.js";
 import { FakeJudgeModelClient } from "./fake-judge.js";
 import { runEval, summarise, writeResults } from "./runner.js";

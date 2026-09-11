@@ -1,5 +1,5 @@
-import { formatCents, type Lane } from "@subtitle-translator/pricing";
-import type { LaneRate } from "@subtitle-translator/shared";
+import { formatCents, type Lane } from "@lexicue/pricing";
+import type { LaneRate } from "@lexicue/shared";
 import "./LaneChoice.css";
 
 /**

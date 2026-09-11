@@ -1,4 +1,4 @@
-import { formatCents } from "@subtitle-translator/pricing";
+import { formatCents } from "@lexicue/pricing";
 
 /** The small formatting decisions the whole interface shares. */
 

@@ -1,4 +1,4 @@
-import { priceCents, type Lane } from "@subtitle-translator/pricing";
+import { priceCents, type Lane } from "@lexicue/pricing";
 import {
   MAX_FILE_BYTES,
   REJECTION_MESSAGES,
@@ -6,8 +6,8 @@ import {
   hasImageCompanion,
   inspectBytes,
   type SubtitleDocument,
-} from "@subtitle-translator/subtitles";
-import { parseSubtitleBytesInBrowser } from "@subtitle-translator/subtitles/browser";
+} from "@lexicue/subtitles";
+import { parseSubtitleBytesInBrowser } from "@lexicue/subtitles/browser";
 import { unzipSync } from "fflate";
 
 /**

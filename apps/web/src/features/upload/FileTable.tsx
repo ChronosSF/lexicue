@@ -1,4 +1,4 @@
-import { formatCents, type Lane } from "@subtitle-translator/pricing";
+import { formatCents, type Lane } from "@lexicue/pricing";
 import { formatBytes, formatCount, formatDuration, formatName } from "../../ui/format.js";
 import "./FileTable.css";
 import type { LocalFile } from "./local-files.js";

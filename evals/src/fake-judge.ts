@@ -9,7 +9,7 @@ import {
   type BatchResultItem,
   type BatchStatus,
   type TokenCountRequest,
-} from "@subtitle-translator/harness";
+} from "@lexicue/harness";
 import type { Judgement, SeasonConsistency } from "./rubric.js";
 
 /**

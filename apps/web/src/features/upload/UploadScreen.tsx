@@ -1,6 +1,6 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import { ApiError, isInsufficientBalance } from "@subtitle-translator/shared";
-import { MAX_FILES_PER_UPLOAD } from "@subtitle-translator/subtitles";
+import { formatCents } from "@lexicue/pricing";
+import { ApiError, isInsufficientBalance } from "@lexicue/shared";
+import { MAX_FILES_PER_UPLOAD } from "@lexicue/subtitles";
 import { useState } from "react";
 import { useDraft } from "../../app/draft.js";
 import { useCreateBatch, useLanguages, useMe, usePricing, useTopUp } from "../../app/queries.js";

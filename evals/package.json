@@ -1,5 +1,5 @@
 {
-  "name": "@subtitle-translator/evals",
+  "name": "@lexicue/evals",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,10 +13,10 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@subtitle-translator/cli": "workspace:*",
-    "@subtitle-translator/harness": "workspace:*",
-    "@subtitle-translator/pricing": "workspace:*",
-    "@subtitle-translator/subtitles": "workspace:*",
+    "@lexicue/cli": "workspace:*",
+    "@lexicue/harness": "workspace:*",
+    "@lexicue/pricing": "workspace:*",
+    "@lexicue/subtitles": "workspace:*",
     "zod": "4.6.1"
   }
 }

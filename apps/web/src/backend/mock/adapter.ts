@@ -1,4 +1,4 @@
-import { TARGET_LANGUAGES, findTargetLanguage } from "@subtitle-translator/harness";
+import { TARGET_LANGUAGES, findTargetLanguage } from "@lexicue/harness";
 import {
   DEFAULT_TOP_UP_CENTS,
   FREE_BALANCE_CENTS,
@@ -8,7 +8,7 @@ import {
   TOP_UP_AMOUNTS_CENTS,
   formatCents,
   priceCents,
-} from "@subtitle-translator/pricing";
+} from "@lexicue/pricing";
 import {
   ApiError,
   type BatchListResponse,
@@ -24,7 +24,7 @@ import {
   type TopUpResponse,
   type UnusableFile,
   type UploadTarget,
-} from "@subtitle-translator/shared";
+} from "@lexicue/shared";
 import {
   MAX_CUES_PER_FILE,
   MAX_FILE_BYTES,
@@ -34,8 +34,8 @@ import {
   SubtitleRejectedError,
   hasImageCompanion,
   type SubtitleDocument,
-} from "@subtitle-translator/subtitles";
-import { parseSubtitleBytesInBrowser } from "@subtitle-translator/subtitles/browser";
+} from "@lexicue/subtitles";
+import { parseSubtitleBytesInBrowser } from "@lexicue/subtitles/browser";
 import type { BackendAdapter, DemoControls, SampleFile, Session } from "../types.js";
 import { DownloadUrls, base64ToBytes, bytesToBase64, type UrlFactory } from "./bytes.js";
 import { seedDemoState } from "./seed.js";

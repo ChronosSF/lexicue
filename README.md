@@ -1,6 +1,6 @@
-# Subtitle Translator
+# Lexicue
 
-The product described in `subtitle-translator-spec.md`. Two phases are in this
+The product described in `lexicue-spec.md`. Two phases are in this
 repository.
 
 **Phase 1** is the engine: the translation harness, the subtitle parser and
@@ -219,7 +219,7 @@ whitespace-level normalisations exist around it:
   perfectly well, and falls back to Windows-1252 rather than refusing a file.
 - `packages/subtitles` and `packages/pricing` are browser-clean, and an ESLint
   rule fails the build if a Node built-in or a Node global reaches them. The one
-  exception is the `@subtitle-translator/subtitles/encoding` entry point, which
+  exception is the `@lexicue/subtitles/encoding` entry point, which
   uses `iconv-lite` and `chardet` and needs a `Buffer` polyfill in a browser
   bundle — every bundler supplies one, and the browser preview of Phase 2 is the
   first consumer.

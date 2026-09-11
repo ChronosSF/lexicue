@@ -79,9 +79,9 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["node:*", "@subtitle-translator/subtitles/encoding"],
+              group: ["node:*", "@lexicue/subtitles/encoding"],
               message:
-                "The SPA runs in a browser: use @subtitle-translator/subtitles/browser, which needs no Node built-ins.",
+                "The SPA runs in a browser: use @lexicue/subtitles/browser, which needs no Node built-ins.",
             },
           ],
         },

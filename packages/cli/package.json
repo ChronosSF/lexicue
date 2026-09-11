@@ -1,5 +1,5 @@
 {
-  "name": "@subtitle-translator/cli",
+  "name": "@lexicue/cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,8 +16,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@subtitle-translator/harness": "workspace:*",
-    "@subtitle-translator/pricing": "workspace:*",
-    "@subtitle-translator/subtitles": "workspace:*"
+    "@lexicue/harness": "workspace:*",
+    "@lexicue/pricing": "workspace:*",
+    "@lexicue/subtitles": "workspace:*"
   }
 }

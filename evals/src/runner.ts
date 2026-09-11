@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Lane } from "@subtitle-translator/pricing";
-import { serialiseSubtitleDocument } from "@subtitle-translator/subtitles";
+import type { Lane } from "@lexicue/pricing";
+import { serialiseSubtitleDocument } from "@lexicue/subtitles";
 import {
   PROMPT_VERSION,
   findTargetLanguage,
@@ -12,8 +12,8 @@ import {
   type ModelUsage,
   type TranslationModelClient,
   type TranslationOptions,
-} from "@subtitle-translator/harness";
-import { addUsage, emptyUsage } from "@subtitle-translator/harness";
+} from "@lexicue/harness";
+import { addUsage, emptyUsage } from "@lexicue/harness";
 import { loadCorpus, seasonEntries, standaloneEntries, type CorpusEntry } from "./corpus.js";
 import {
   checkNameConsistency,

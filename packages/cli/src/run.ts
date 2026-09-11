@@ -8,8 +8,8 @@ import {
   type HarnessConfig,
   type TranslationModelClient,
   type TranslationOptions,
-} from "@subtitle-translator/harness";
-import { encodeSubtitleDocument } from "@subtitle-translator/subtitles/encoding";
+} from "@lexicue/harness";
+import { encodeSubtitleDocument } from "@lexicue/subtitles/encoding";
 import { UsageError, type TranslateCommand } from "./args.js";
 import { outputPathFor, readJobs, resolveInputPaths } from "./files.js";
 import { formatFileReport, formatUploadSummary } from "./report-lines.js";

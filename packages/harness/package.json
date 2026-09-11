@@ -1,5 +1,5 @@
 {
-  "name": "@subtitle-translator/harness",
+  "name": "@lexicue/harness",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.124.0",
-    "@subtitle-translator/pricing": "workspace:*",
-    "@subtitle-translator/subtitles": "workspace:*",
+    "@lexicue/pricing": "workspace:*",
+    "@lexicue/subtitles": "workspace:*",
     "zod": "4.6.1"
   }
 }

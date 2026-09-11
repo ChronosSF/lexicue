@@ -1,4 +1,4 @@
-import type { SeasonGlossarySummary } from "@subtitle-translator/shared";
+import type { SeasonGlossarySummary } from "@lexicue/shared";
 import { joinWords } from "../../ui/format.js";
 import "./SeasonGlossaryPanel.css";
 

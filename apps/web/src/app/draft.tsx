@@ -1,6 +1,6 @@
-import type { Lane } from "@subtitle-translator/pricing";
-import { DEFAULT_TRANSLATION_OPTIONS, type TranslationOptions } from "@subtitle-translator/shared";
-import { MAX_FILES_PER_UPLOAD } from "@subtitle-translator/subtitles";
+import type { Lane } from "@lexicue/pricing";
+import { DEFAULT_TRANSLATION_OPTIONS, type TranslationOptions } from "@lexicue/shared";
+import { MAX_FILES_PER_UPLOAD } from "@lexicue/subtitles";
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { intake, type LocalFile, type RawFile } from "../features/upload/local-files.js";
 

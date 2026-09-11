@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import type { Batch } from "@subtitle-translator/shared";
+import { formatCents } from "@lexicue/pricing";
+import type { Batch } from "@lexicue/shared";
 import { useBackend } from "../../app/backend.js";
 import { useBatch, useDeleteBatchFiles } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";

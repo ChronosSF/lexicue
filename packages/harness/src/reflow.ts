@@ -1,4 +1,4 @@
-import { splitMarkup, stripMarkup } from "@subtitle-translator/subtitles";
+import { splitMarkup, stripMarkup } from "@lexicue/subtitles";
 
 /**
  * Re-flows a cue's lines to at most `maxLines`, breaking at the nearest

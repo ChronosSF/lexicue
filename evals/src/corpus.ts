@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import type { TranslationJob } from "@subtitle-translator/harness";
-import { parseSubtitleBytes } from "@subtitle-translator/subtitles/encoding";
+import type { TranslationJob } from "@lexicue/harness";
+import { parseSubtitleBytes } from "@lexicue/subtitles/encoding";
 
 /** Where the corpus lives, relative to this file. */
 export const CORPUS_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "corpus");

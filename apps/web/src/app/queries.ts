@@ -7,7 +7,7 @@ import {
   type MeResponse,
   type PricingResponse,
   type TopUpResponse,
-} from "@subtitle-translator/shared";
+} from "@lexicue/shared";
 import {
   useMutation,
   useQuery,

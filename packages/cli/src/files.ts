@@ -1,8 +1,8 @@
 import { existsSync, globSync, readFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import { SubtitleRejectedError, assertNoImageCompanion } from "@subtitle-translator/subtitles";
-import { parseSubtitleBytes } from "@subtitle-translator/subtitles/encoding";
-import type { TranslationJob } from "@subtitle-translator/harness";
+import { SubtitleRejectedError, assertNoImageCompanion } from "@lexicue/subtitles";
+import { parseSubtitleBytes } from "@lexicue/subtitles/encoding";
+import type { TranslationJob } from "@lexicue/harness";
 
 /**
  * Expands the arguments into real paths. Shells expand `season/*.srt`

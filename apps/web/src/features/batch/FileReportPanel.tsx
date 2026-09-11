@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import type { FileReport } from "@subtitle-translator/shared";
+import { formatCents } from "@lexicue/pricing";
+import type { FileReport } from "@lexicue/shared";
 import { formatCount, pluralise } from "../../ui/format.js";
 import "./FileReportPanel.css";
 

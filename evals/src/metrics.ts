@@ -1,10 +1,6 @@
-import { priceCents, type Lane } from "@subtitle-translator/pricing";
-import {
-  markupMultisetsEqual,
-  parseSubtitleText,
-  type SubtitleDocument,
-} from "@subtitle-translator/subtitles";
-import type { FileReport, ModelUsage } from "@subtitle-translator/harness";
+import { priceCents, type Lane } from "@lexicue/pricing";
+import { markupMultisetsEqual, parseSubtitleText, type SubtitleDocument } from "@lexicue/subtitles";
+import type { FileReport, ModelUsage } from "@lexicue/harness";
 
 /**
  * The metrics that must be perfect (spec section 10.4). Any false here is a

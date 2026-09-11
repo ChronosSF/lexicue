@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import type { Job } from "@subtitle-translator/shared";
+import { formatCents } from "@lexicue/pricing";
+import type { Job } from "@lexicue/shared";
 import { useState } from "react";
 import { formatCount, formatName } from "../../ui/format.js";
 import { FileReportPanel } from "./FileReportPanel.js";

@@ -1,4 +1,4 @@
-import { parseSubtitleText } from "@subtitle-translator/subtitles";
+import { parseSubtitleText } from "@lexicue/subtitles";
 import { describe, expect, it } from "vitest";
 import { FakeTranslationModelClient } from "./clients/fake.js";
 import { FaultInjectingModelClient, type Fault } from "./clients/fault.js";

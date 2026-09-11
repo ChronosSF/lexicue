@@ -1,4 +1,4 @@
-import { TOP_UP_AMOUNTS_CENTS } from "@subtitle-translator/pricing";
+import { TOP_UP_AMOUNTS_CENTS } from "@lexicue/pricing";
 import { describe, expect, it } from "vitest";
 import { emptyState, type MockState } from "./state.js";
 import {

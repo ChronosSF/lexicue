@@ -17,11 +17,11 @@
     // The workspace packages are compiled from source here, exactly as Vite and
     // Vitest resolve them; `subtitles/encoding` is deliberately not reachable.
     "paths": {
-      "@subtitle-translator/subtitles/browser": ["../../packages/subtitles/src/browser/index.ts"],
-      "@subtitle-translator/subtitles": ["../../packages/subtitles/src/index.ts"],
-      "@subtitle-translator/pricing": ["../../packages/pricing/src/index.ts"],
-      "@subtitle-translator/harness": ["../../packages/harness/src/index.ts"],
-      "@subtitle-translator/shared": ["../../packages/shared/src/index.ts"]
+      "@lexicue/subtitles/browser": ["../../packages/subtitles/src/browser/index.ts"],
+      "@lexicue/subtitles": ["../../packages/subtitles/src/index.ts"],
+      "@lexicue/pricing": ["../../packages/pricing/src/index.ts"],
+      "@lexicue/harness": ["../../packages/harness/src/index.ts"],
+      "@lexicue/shared": ["../../packages/shared/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts", "vitest.config.ts", "vitest.setup.ts", "env.d.ts"]

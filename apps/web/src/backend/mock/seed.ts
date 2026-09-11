@@ -1,10 +1,10 @@
-import { DEFAULT_TRANSLATION_OPTIONS } from "@subtitle-translator/shared";
+import { DEFAULT_TRANSLATION_OPTIONS } from "@lexicue/shared";
 import type {
   CreateBatchResponse,
   CreateUploadsResponse,
   TopUpResponse,
   UploadTarget,
-} from "@subtitle-translator/shared";
+} from "@lexicue/shared";
 import type { Session } from "../types.js";
 import type { MockState } from "./state.js";
 

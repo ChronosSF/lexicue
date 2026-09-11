@@ -4,14 +4,7 @@
  */
 export function Logo({ size = 26 }: { size?: number }): React.JSX.Element {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      role="img"
-      aria-label="Subtitle Translator"
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 32 32" role="img" aria-label="Lexicue" fill="none">
       <rect
         x="2.5"
         y="5.5"

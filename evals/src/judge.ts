@@ -1,11 +1,7 @@
-import type { SubtitleDocument } from "@subtitle-translator/subtitles";
-import { stripMarkup } from "@subtitle-translator/subtitles";
-import type {
-  ModelRequest,
-  ModelUsage,
-  TranslationModelClient,
-} from "@subtitle-translator/harness";
-import { emptyUsage } from "@subtitle-translator/harness";
+import type { SubtitleDocument } from "@lexicue/subtitles";
+import { stripMarkup } from "@lexicue/subtitles";
+import type { ModelRequest, ModelUsage, TranslationModelClient } from "@lexicue/harness";
+import { emptyUsage } from "@lexicue/harness";
 import {
   AXES,
   JUDGE_RUBRIC,

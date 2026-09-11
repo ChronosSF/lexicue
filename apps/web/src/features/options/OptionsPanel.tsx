@@ -1,4 +1,4 @@
-import type { TranslationOptions } from "@subtitle-translator/shared";
+import type { TranslationOptions } from "@lexicue/shared";
 import { useId } from "react";
 import "./OptionsPanel.css";
 

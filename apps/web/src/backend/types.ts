@@ -11,7 +11,7 @@ import type {
   TopUpRequest,
   TopUpResponse,
   UploadTarget,
-} from "@subtitle-translator/shared";
+} from "@lexicue/shared";
 
 /**
  * One interface, two implementations: the mock backend runs the whole product

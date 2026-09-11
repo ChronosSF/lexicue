@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import { ApiError, type LedgerEntry, type LedgerReason } from "@subtitle-translator/shared";
+import { formatCents } from "@lexicue/pricing";
+import { ApiError, type LedgerEntry, type LedgerReason } from "@lexicue/shared";
 import { newId, type MockState } from "./state.js";
 
 /**

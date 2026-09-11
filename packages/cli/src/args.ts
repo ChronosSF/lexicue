@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { isLane, type Lane } from "@subtitle-translator/pricing";
+import { isLane, type Lane } from "@lexicue/pricing";
 import {
   MAX_CONTEXT_NOTE_LENGTH,
   findTargetLanguage,
@@ -7,7 +7,7 @@ import {
   type Formality,
   type LineHandling,
   type TargetLanguage,
-} from "@subtitle-translator/harness";
+} from "@lexicue/harness";
 
 /** Everything `harness translate` was asked to do. */
 export interface TranslateCommand {

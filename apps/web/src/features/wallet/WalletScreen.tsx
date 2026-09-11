@@ -1,5 +1,5 @@
-import { formatCents } from "@subtitle-translator/pricing";
-import type { LedgerEntry } from "@subtitle-translator/shared";
+import { formatCents } from "@lexicue/pricing";
+import type { LedgerEntry } from "@lexicue/shared";
 import { useState } from "react";
 import { useMe, usePricing, useTopUp } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";

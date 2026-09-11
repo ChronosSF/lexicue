@@ -1,5 +1,5 @@
-import type { SubtitleDocument } from "@subtitle-translator/subtitles";
-import { serialiseAndVerify } from "@subtitle-translator/subtitles";
+import type { SubtitleDocument } from "@lexicue/subtitles";
+import { serialiseAndVerify } from "@lexicue/subtitles";
 import {
   planBatches,
   runFastLaneBatches,

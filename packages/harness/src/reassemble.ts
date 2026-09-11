@@ -1,5 +1,5 @@
-import type { Cue, SubtitleDocument } from "@subtitle-translator/subtitles";
-import { documentDialogueChars } from "@subtitle-translator/subtitles";
+import type { Cue, SubtitleDocument } from "@lexicue/subtitles";
+import { documentDialogueChars } from "@lexicue/subtitles";
 
 /**
  * Builds the output document from the source document and the translated lines
