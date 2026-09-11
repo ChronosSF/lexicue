@@ -217,10 +217,16 @@ Everything here is deliberate. Nothing in this list is a bug.
 
 **Not built, because it is not Phase 1**
 
-- No CDK, API, worker, poller, zip builder, SPA, wallet or Stripe. Those are
-  Phases 2 and 3.
-- No `packages/shared`. Its contents are the zod schemas of the API contract,
-  which has no consumer until Phase 2.
+This list was written when Phase 1 was all there was. Two of its entries have
+since been overtaken by Phase 2, and say so.
+
+- No CDK, no deployed API, worker or poller, and no Stripe. Those are Phases 2
+  and 3. A zip builder, a wallet and the SPA now exist, in `packages/dev-api`
+  and `apps/web`, as a local development stand-in rather than the deployed
+  thing.
+- `packages/shared` now exists: the zod schemas of the API contract, plus the
+  wallet arithmetic and the same-language refusal that every implementation of
+  the contract has to agree on.
 - No GitHub Actions workflows. `pnpm lint`, `pnpm typecheck` and `pnpm test` are
   the whole of continuous integration's Phase 1 surface and run in seconds; the
   `cdk diff` and smoke-test jobs of specification section 9.4 need a stack to
@@ -309,16 +315,24 @@ whitespace-level normalisations exist around it:
 
 ## Test counts and coverage, as measured
 
-496 tests in 20 files, all offline.
+603 tests in 33 files, all offline: nothing in the suite touches the network or
+the key, and the local development API is driven over real HTTP against the
+deterministic fake model client.
 
 | Package              | Statements |   Branches |  Functions |      Lines |
 | -------------------- | ---------: | ---------: | ---------: | ---------: |
-| `packages/subtitles` |     98.94% |     93.98% |       100% |     99.39% |
+| `packages/subtitles` |     98.33% |     92.55% |       100% |     99.51% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
-| `packages/harness`   |     96.67% |     87.37% |     97.14% |     97.97% |
-| `packages/cli`       |     90.96% |     72.95% |       100% |     92.41% |
+| `packages/harness`   |     96.66% |     87.28% |     97.21% |     98.04% |
+| `packages/shared`    |     99.12% |     83.87% |       100% |       100% |
+| `packages/cli`       |     91.06% |     73.85% |       100% |     92.86% |
+| `packages/dev-api`   |     81.87% |     72.11% |     88.74% |     83.85% |
 | `evals`              |     92.86% |     76.60% |     96.67% |     95.11% |
-| **All**              | **96.15%** | **86.00%** | **97.94%** | **97.33%** |
+| **All**              | **92.88%** | **82.94%** | **95.48%** | **94.38%** |
+
+`packages/dev-api` is the lowest, and deliberately so: the parts of it that are
+not covered are the executable entry points (`bin.ts`, `dev.ts`), which start
+processes, and the error paths that only a real model outage reaches.
 
 Specification section 10.1 sets a 95% target on `packages/subtitles` and
 `packages/pricing`; both are past it and the threshold is enforced by
