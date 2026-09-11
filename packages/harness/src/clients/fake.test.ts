@@ -179,9 +179,22 @@ describe("the cached prefix", () => {
 
   it("uses the one-hour breakpoint on the economy lane", () => {
     const ctx = context({ lane: "economy" });
-    const request = buildGlossaryRequest(ctx, null);
+    const request = buildBatchRequest(ctx, { glossary: emptyGlossary(), cues: CUES });
     expect(request.system[0]?.cacheControl?.ttl).toBe("1h");
     expect(request.user[0]?.cacheControl?.ttl).toBe("1h");
+  });
+
+  /**
+   * The source file carries no breakpoint on the glossary pass: its entry could
+   * only ever be written, never read, because the schema is part of the key.
+   * Paying 1.25x — or 2x at the economy lane's one-hour TTL — for that is money
+   * for nothing. The system prompt keeps its breakpoint, since every glossary
+   * pass of every file shares it.
+   */
+  it("does not pay to cache the source file on the glossary pass", () => {
+    const request = buildGlossaryRequest(context({ lane: "economy" }), null);
+    expect(request.system[0]?.cacheControl?.ttl).toBe("1h");
+    expect(request.user[0]?.cacheControl).toBeUndefined();
   });
 });
 

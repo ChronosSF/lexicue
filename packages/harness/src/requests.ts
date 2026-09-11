@@ -46,8 +46,22 @@ export function buildSourceDocument(cues: readonly ProtocolCue[]): string {
 }
 
 /**
- * The glossary pass: the system prompt and the entire source file with a cache
- * breakpoint after the file, then the request (spec section 4.4).
+ * The glossary pass: the system prompt and the entire source file, then the
+ * request (spec section 4.4).
+ *
+ * The source file takes no cache breakpoint here, which is the one place this
+ * harness departs from section 4.4. The section has this call warm the prefix
+ * every batch then reads, but a request's structured-output schema renders
+ * ahead of the system prompt, the way a tool list does, and is part of the
+ * cache key — and this call's schema is the glossary's, not the batch schema.
+ * Measured against Sonnet 5 on 11 September 2026, a batch with byte-identical
+ * prefix bytes wrote the prefix again rather than reading what this call wrote.
+ * An entry nothing can read is not worth a write premium of 1.25x, or 2x at the
+ * economy lane's one-hour TTL, so the file is sent as plain input and the first
+ * batch writes the entry the batches share.
+ *
+ * The system prompt keeps its breakpoint: that prefix really is shared, by
+ * every glossary pass of every file.
  */
 export function buildGlossaryRequest(
   context: RequestContext,
@@ -58,7 +72,7 @@ export function buildGlossaryRequest(
     outputSchema: FileGlossarySchema,
     purpose: "glossary",
     user: [
-      cachedBlock(context.sourceDocument, cacheTtlFor(context)),
+      { text: context.sourceDocument },
       { text: renderGlossaryRequest(context.options, seasonGlossary) },
     ],
   };
