@@ -264,8 +264,10 @@ describe("the lifecycle of an upload", () => {
     const ids = await upload(harness, [{ fileName: "keeper.srt", text: SRT }]);
     const response = await createBatch(harness, ids);
     const created = (await response.json()) as { batch: Batch };
-    // 202 comes back before the work is done, which is what the poll is for.
-    expect(["queued", "running"]).toContain(created.batch.status);
+    // 202 comes back before the work is done, which is what the poll is for,
+    // and the file is already running: its glossary pass starts immediately.
+    expect(created.batch.status).toBe("running");
+    expect(created.batch.jobs[0]?.status).toBe("running");
     expect(created.batch.pollAfterMs).toBe(2_000);
 
     await harness.api.idle();

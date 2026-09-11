@@ -1,5 +1,5 @@
 import { formatCents } from "@lexicue/pricing";
-import type { Batch } from "@lexicue/shared";
+import { isBatchRunning, type Batch } from "@lexicue/shared";
 import { useBackend } from "../../app/backend.js";
 import { useBatch, useDeleteBatchFiles } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";
@@ -38,7 +38,9 @@ export function BatchScreen({ batchId }: { batchId: string }): React.JSX.Element
   }
 
   const data = batch.data;
-  const running = data.status === "queued" || data.status === "running";
+  // `submitted` is an economy-lane batch waiting on its Message Batch, which is
+  // as running as anything else: its files are not there to delete yet.
+  const running = isBatchRunning(data);
   const refunded = data.refundedCents > 0;
 
   return (
@@ -107,7 +109,11 @@ export function BatchScreen({ batchId }: { batchId: string }): React.JSX.Element
           .
         </p>
         {data.filesExpireAt === null ? (
-          <p className="faint">These files have been deleted.</p>
+          // A batch that has not finished has no expiry yet either, and saying
+          // its files are deleted while they are still being written is a lie.
+          running ? null : (
+            <p className="faint">These files have been deleted.</p>
+          )
         ) : (
           <p className="faint">
             Files are deleted {formatRelativeFuture(data.filesExpireAt)}; the history row stays for

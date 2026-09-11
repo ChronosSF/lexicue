@@ -100,6 +100,12 @@ export function createRunner(options: RunnerOptions): TranslationRunner {
 
       batch.status = "running";
       for (const job of jobs) job.status = "queued";
+      // `translateUpload` works through the files in order, and the first one's
+      // glossary pass starts before any batch is planned. Leaving it "queued"
+      // until the first batch answers showed nothing happening for the ten
+      // seconds that pass takes.
+      const first = jobs[0];
+      if (first !== undefined) first.status = "running";
       store.save();
 
       const translationJobs: TranslationJob[] = jobs.map((job, index) => ({
@@ -140,6 +146,9 @@ export function createRunner(options: RunnerOptions): TranslationRunner {
             job.status = "done";
             job.batchesDone = job.batchesTotal;
             job.finishedAt = clock();
+            // The next file is what the harness turns to now.
+            const next = jobs[finishedCount];
+            if (next?.status === "queued") next.status = "running";
             store.save();
           },
         });

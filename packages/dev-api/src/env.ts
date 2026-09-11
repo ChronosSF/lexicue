@@ -25,8 +25,11 @@ export interface ResolvedKey {
   overridden: string[];
 }
 
-export function resolveApiKey(env: Record<string, string | undefined>): ResolvedKey {
-  const file = loadEnvFile(envFilePath(), env);
+export function resolveApiKey(
+  env: Record<string, string | undefined>,
+  path: string = envFilePath(),
+): ResolvedKey {
+  const file = loadEnvFile(path, env);
   const key = env["ANTHROPIC_API_KEY"];
   return {
     apiKey: key === undefined || key.trim() === "" ? null : key,
