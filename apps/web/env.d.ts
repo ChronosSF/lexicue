@@ -3,7 +3,9 @@
 /**
  * The one build-time switch the app has (spec section 9.6 keeps everything else
  * in a `config.json` the deployment writes). `mock` runs the whole product in
- * the browser; `real` talks to `/api/*` with a Cognito token.
+ * the browser with a fake model; anything else talks to `/api/*` — the local
+ * development API under `pnpm dev`, and the deployed handlers with a Cognito
+ * token in Phase 2.
  */
 interface ImportMetaEnv {
   readonly VITE_BACKEND?: "mock" | "real";

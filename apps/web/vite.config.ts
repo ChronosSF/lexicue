@@ -19,9 +19,34 @@ export const workspaceAliases: Record<string, string> = {
   "@lexicue/shared": src("../../packages/shared/src/index.ts"),
 };
 
-export default defineConfig({
+/**
+ * The local development API runs as its own process (`packages/dev-api`), and
+ * `/api` is proxied to it, so the browser sees one origin exactly as it will
+ * behind CloudFront (spec section 7.2) and the app's `RealBackend` is exercised
+ * over a real HTTP hop. `pnpm dev` starts both; `pnpm dev:mock` starts only
+ * this, with the in-browser mock backend.
+ */
+const apiPort = Number(process.env["LEXICUE_API_PORT"] ?? "5174");
+
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: { alias: workspaceAliases },
-  server: { port: 5173, strictPort: false },
+  // `vite --mode mock` is what `pnpm dev:mock` runs. A mode rather than an
+  // environment variable because `VITE_BACKEND=mock vite` is not a command on
+  // Windows, and an extra dependency to say so is not worth it. Every other
+  // mode leaves `VITE_BACKEND` to the environment, as spec section 9.6 expects.
+  ...(mode === "mock"
+    ? { define: { "import.meta.env.VITE_BACKEND": JSON.stringify("mock") } }
+    : {}),
+  server: {
+    port: 5173,
+    strictPort: false,
+    proxy: {
+      "/api": {
+        target: `http://127.0.0.1:${apiPort.toString()}`,
+        changeOrigin: false,
+      },
+    },
+  },
   build: { outDir: "dist", sourcemap: true },
-});
+}));

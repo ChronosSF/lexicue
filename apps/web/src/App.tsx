@@ -83,6 +83,8 @@ function Shell(): React.JSX.Element {
     return items;
   }
 
+  const badge = badgeFor(backend);
+
   return (
     <div className="shell">
       <AppHeader
@@ -99,7 +101,7 @@ function Shell(): React.JSX.Element {
             }
           : {})}
         menuItems={menuItems}
-        {...(backend.kind === "mock" ? { demoBadge: "Demo" } : {})}
+        {...(badge === null ? {} : { demoBadge: badge })}
       />
 
       <main className="container main">
@@ -120,6 +122,18 @@ function Shell(): React.JSX.Element {
       </footer>
     </div>
   );
+}
+
+/**
+ * What the header says about which backend is answering. The mock is a demo
+ * end to end; the local development API translates for real but its wallet is
+ * still a simulation, and the user should never be in any doubt which.
+ */
+function badgeFor(backend: BackendAdapter): string | null {
+  if (backend.kind === "mock") return "Demo";
+  // Only the local development API offers a reset, so this is development.
+  if (backend.demo !== null) return "Local · real translation, simulated money";
+  return null;
 }
 
 function Screen({ route }: { route: Route }): React.JSX.Element {

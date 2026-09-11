@@ -1,6 +1,7 @@
 import { formatCents } from "@lexicue/pricing";
 import type { LedgerEntry } from "@lexicue/shared";
 import { useState } from "react";
+import { useBackend } from "../../app/backend.js";
 import { useMe, usePricing, useTopUp } from "../../app/queries.js";
 import { useRoute } from "../../app/routes.js";
 import { formatDateTime, formatDollars } from "../../ui/format.js";
@@ -13,6 +14,7 @@ import "./WalletScreen.css";
  * credits, so there is nothing to convert in one's head.
  */
 export function WalletScreen(): React.JSX.Element {
+  const backend = useBackend();
   const me = useMe();
   const pricing = usePricing();
   const topUp = useTopUp();
@@ -34,6 +36,15 @@ export function WalletScreen(): React.JSX.Element {
           </p>
         ) : (
           <p className="muted">Every file is charged at the price shown before you confirm.</p>
+        )}
+        {backend.demo === null ? null : (
+          <p className="muted">
+            <strong>The money here is simulated.</strong> There is no card and no Stripe: choosing
+            an amount credits the balance straight away.
+            {backend.kind === "mock"
+              ? " Nothing else is real either — the translations come from a fake model."
+              : " The translations, though, are real and cost the account behind the API key."}
+          </p>
         )}
       </header>
 

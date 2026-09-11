@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "tsc -b && pnpm --filter web build",
-    "dev": "pnpm --filter web dev",
+    "dev": "tsx packages/dev-api/src/dev.ts",
+    "dev:mock": "pnpm --filter web dev:mock",
+    "dev:api": "tsx packages/dev-api/src/bin.ts",
     "clean": "tsc -b --clean",
     "typecheck": "tsc -b && pnpm --filter web typecheck",
     "lint": "eslint . && prettier --check .",

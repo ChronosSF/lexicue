@@ -26,7 +26,7 @@ import {
   type UploadTarget,
 } from "@lexicue/shared";
 import type { z } from "zod";
-import type { BackendAdapter, Session } from "./types.js";
+import type { BackendAdapter, DemoControls, Session } from "./types.js";
 
 /**
  * The same interface against the deployed API of spec section 7.3: one `fetch`
@@ -39,12 +39,29 @@ import type { BackendAdapter, Session } from "./types.js";
  * belongs with the user pool it talks to.
  */
 
+/**
+ * The three things this adapter cannot do on its own, supplied only in
+ * development: sign-in and verification, which belong to Cognito, and the
+ * checkout confirmation, which belongs to Stripe's webhook. `createBackend`
+ * builds them only under `import.meta.env.DEV`, so a production build has none
+ * of it and the sign-in methods below say plainly that Phase 2 owns them.
+ */
+export interface RealBackendExtras {
+  signIn: (input: { email: string }) => Promise<Session>;
+  verifyEmail: () => Promise<Session>;
+  completeCheckout: (sessionId: string) => Promise<void>;
+  /** Samples and the reset, which only a demo offers. */
+  demo: DemoControls;
+}
+
 export interface RealBackendOptions {
   /** Defaults to the same origin, which is how CloudFront serves `/api/*`. */
   baseUrl?: string;
   /** The Cognito id token. Kept in memory or session storage, never a cookie. */
   getToken?: () => Promise<string | null>;
   fetchImpl?: typeof fetch;
+  /** Development only; see {@link RealBackendExtras}. */
+  dev?: RealBackendExtras;
 }
 
 const PHASE_TWO =
@@ -52,16 +69,19 @@ const PHASE_TWO =
 
 export class RealBackend implements BackendAdapter {
   readonly kind = "real";
-  readonly demo = null;
+  readonly demo: DemoControls | null;
 
   private readonly baseUrl: string;
   private readonly getToken: () => Promise<string | null>;
   private readonly fetchImpl: typeof fetch;
+  private readonly dev: RealBackendExtras | null;
 
   constructor(options: RealBackendOptions = {}) {
     this.baseUrl = (options.baseUrl ?? "").replace(/\/$/, "");
     this.getToken = options.getToken ?? defaultToken;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
+    this.dev = options.dev ?? null;
+    this.demo = options.dev?.demo ?? null;
   }
 
   async getSession(): Promise<Session | null> {
@@ -76,12 +96,18 @@ export class RealBackend implements BackendAdapter {
     };
   }
 
-  signIn(): Promise<Session> {
-    return Promise.reject(new ApiError({ code: "unauthorised", message: PHASE_TWO }));
+  signIn(input: { email: string }): Promise<Session> {
+    if (this.dev === null) {
+      return Promise.reject(new ApiError({ code: "unauthorised", message: PHASE_TWO }));
+    }
+    return this.dev.signIn(input);
   }
 
   verifyEmail(): Promise<Session> {
-    return Promise.reject(new ApiError({ code: "unauthorised", message: PHASE_TWO }));
+    if (this.dev === null) {
+      return Promise.reject(new ApiError({ code: "unauthorised", message: PHASE_TWO }));
+    }
+    return this.dev.verifyEmail();
   }
 
   signOut(): Promise<void> {
@@ -140,9 +166,13 @@ export class RealBackend implements BackendAdapter {
     return this.call("createTopUp", TopUpResponseSchema, { body: request });
   }
 
-  /** Stripe's webhook credits the balance; the SPA only polls `/api/me`. */
-  completeCheckout(): Promise<void> {
-    return Promise.resolve();
+  /**
+   * Stripe's webhook credits the balance and the SPA only polls `/api/me`. The
+   * local development API has no webhook, so in development the checkout page
+   * tells it the payment landed, exactly as the mock's own page does.
+   */
+  completeCheckout(sessionId: string): Promise<void> {
+    return this.dev?.completeCheckout(sessionId) ?? Promise.resolve();
   }
 
   async deleteAccount(): Promise<void> {
@@ -176,7 +206,7 @@ export class RealBackend implements BackendAdapter {
   }
 }
 
-const TOKEN_KEY = "lexicue/id-token";
+export const TOKEN_KEY = "lexicue/id-token";
 
 function defaultToken(): Promise<string | null> {
   return Promise.resolve(globalThis.sessionStorage.getItem(TOKEN_KEY));
@@ -195,14 +225,14 @@ async function toApiError(response: Response): Promise<ApiError> {
   });
 }
 
-interface TokenClaims {
+export interface TokenClaims {
   sub: string;
   email: string;
   email_verified: boolean;
 }
 
 /** Reads the claims for display only; the API validates the signature. */
-function readClaims(token: string): TokenClaims | null {
+export function readClaims(token: string): TokenClaims | null {
   const payload = token.split(".")[1];
   if (payload === undefined) return null;
   try {
