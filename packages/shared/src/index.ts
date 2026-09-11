@@ -111,6 +111,26 @@ export {
 } from "./uploads.js";
 
 export {
+  applyCharge,
+  applyGrant,
+  applyRefund,
+  applyTopUp,
+  insufficientBalance,
+  ledgerBalance,
+  newId,
+  splitFreeFirst,
+  suggestTopUp,
+  type WalletState,
+} from "./wallet.js";
+
+export {
+  baseLanguage,
+  guessSourceLanguage,
+  targetIsSource,
+  type SourceLanguageGuess,
+} from "./source-language.js";
+
+export {
   API_ROUTES,
   routePath,
   type HttpMethod,

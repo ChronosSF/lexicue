@@ -253,10 +253,3 @@ export function prune(state: MockState, now: number): void {
     (entry) => now - new Date(entry.at).getTime() <= HISTORY_RETENTION_MS,
   );
 }
-
-/** Ids that read like the ULIDs the deployed system uses. */
-export function newId(prefix: string): string {
-  const random = globalThis.crypto.getRandomValues(new Uint8Array(8));
-  const suffix = Array.from(random, (byte) => byte.toString(36).padStart(2, "0")).join("");
-  return `${prefix}_${suffix.slice(0, 12)}`;
-}

@@ -11,6 +11,14 @@ import {
 } from "@lexicue/pricing";
 import {
   ApiError,
+  applyCharge,
+  applyGrant,
+  applyRefund,
+  applyTopUp,
+  guessSourceLanguage,
+  insufficientBalance,
+  newId,
+  targetIsSource,
   type BatchListResponse,
   type BatchResponse,
   type CreateBatchRequest,
@@ -39,7 +47,6 @@ import { parseSubtitleBytesInBrowser } from "@lexicue/subtitles/browser";
 import type { BackendAdapter, DemoControls, SampleFile, Session } from "../types.js";
 import { DownloadUrls, base64ToBytes, bytesToBase64, type UrlFactory } from "./bytes.js";
 import { seedDemoState } from "./seed.js";
-import { guessSourceLanguage, targetIsSource } from "./source-language.js";
 import {
   DEFAULT_TIMING,
   FILE_RETENTION_MS,
@@ -47,7 +54,6 @@ import {
   dayStamp,
   emptyState,
   loadState,
-  newId,
   saveState,
   type MockState,
   type MockTiming,
@@ -62,7 +68,6 @@ import {
   runningTimeMs,
 } from "./translate.js";
 import { batchesFor, jobsOf, toBatchSummary, toBatchView } from "./views.js";
-import { applyCharge, applyGrant, applyRefund, applyTopUp, insufficientBalance } from "./wallet.js";
 
 /**
  * The whole product, in the browser, with no server at all.

@@ -9,6 +9,10 @@ import { cuePlainText, type SubtitleDocument } from "@lexicue/subtitles";
  * A stopword count is enough: subtitle dialogue is short function words, and the
  * decision only has to be right about the language the user just uploaded, not
  * about every language in the world.
+ *
+ * It lives in this package because every implementation of the contract has to
+ * refuse the same uploads: the mock backend in the browser, the local
+ * development API, and the Lambda handlers of Phase 2.
  */
 
 const STOPWORDS: Record<string, string[]> = {

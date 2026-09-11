@@ -1,6 +1,5 @@
 import { TOP_UP_AMOUNTS_CENTS } from "@lexicue/pricing";
 import { describe, expect, it } from "vitest";
-import { emptyState, type MockState } from "./state.js";
 import {
   applyCharge,
   applyGrant,
@@ -10,14 +9,19 @@ import {
   ledgerBalance,
   splitFreeFirst,
   suggestTopUp,
+  type WalletState,
 } from "./wallet.js";
 
 /** The wallet arithmetic of spec sections 6.3, 6.5 and 7.4. */
 
 const NOW = Date.parse("2026-09-10T12:00:00.000Z");
 
-function funded(): MockState {
-  const state = emptyState();
+function emptyWallet(): WalletState {
+  return { balanceCents: 0, freeCents: 0, ledger: [] };
+}
+
+function funded(): WalletState {
+  const state = emptyWallet();
   applyGrant(state, 250, NOW);
   applyTopUp(state, { amountCents: 1000, ref: "cs_1", now: NOW });
   return state;
@@ -63,7 +67,7 @@ describe("free before paid", () => {
   });
 
   it("never charges without the balance to cover it", () => {
-    const state = emptyState();
+    const state = emptyWallet();
     expect(() =>
       applyCharge(state, { totalCents: 10, ref: "bat_1", description: "x", now: NOW }),
     ).toThrow();

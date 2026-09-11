@@ -1,12 +1,32 @@
 import { formatCents } from "@lexicue/pricing";
-import { ApiError, type LedgerEntry, type LedgerReason } from "@lexicue/shared";
-import { newId, type MockState } from "./state.js";
+import { ApiError } from "./errors.js";
+import type { LedgerEntry, LedgerReason } from "./me.js";
 
 /**
- * The wallet rules of spec sections 6.3, 6.5 and 7.4. Every movement writes one
- * append-only ledger entry carrying the balance after it, the free portion is
- * always spent before paid balance, and the balance can never go below zero.
+ * The wallet rules of spec sections 6.3, 6.5 and 7.4, as arithmetic over any
+ * store that keeps a balance, a free portion and an append-only ledger.
+ *
+ * They live here rather than in either implementation because two of them have
+ * to agree exactly: the mock backend in the browser and the API that takes the
+ * money. Every movement writes one ledger entry carrying the balance after it,
+ * the free grant is always spent before paid balance, and the balance can never
+ * go below zero.
  */
+
+/** The part of a store the wallet touches. */
+export interface WalletState {
+  balanceCents: number;
+  /** The unspent part of the $2.50 grant, shown separately while it lasts. */
+  freeCents: number;
+  ledger: LedgerEntry[];
+}
+
+/** Ids that read like the ULIDs the deployed system uses. */
+export function newId(prefix: string): string {
+  const random = globalThis.crypto.getRandomValues(new Uint8Array(8));
+  const suffix = Array.from(random, (byte) => byte.toString(36).padStart(2, "0")).join("");
+  return `${prefix}_${suffix.slice(0, 12)}`;
+}
 
 /** How a charge divides between the free grant and paid balance. */
 export function splitFreeFirst(
@@ -24,7 +44,7 @@ export function suggestTopUp(shortfallCents: number, amountsCents: readonly numb
 }
 
 function record(
-  state: MockState,
+  state: WalletState,
   entry: {
     reason: LedgerReason;
     deltaCents: number;
@@ -49,7 +69,7 @@ function record(
 }
 
 /** The one-off $2.50 a verified email receives (spec section 6.5). */
-export function applyGrant(state: MockState, amountCents: number, now: number): LedgerEntry {
+export function applyGrant(state: WalletState, amountCents: number, now: number): LedgerEntry {
   state.balanceCents += amountCents;
   state.freeCents += amountCents;
   return record(state, {
@@ -63,7 +83,7 @@ export function applyGrant(state: MockState, amountCents: number, now: number): 
 }
 
 export function applyTopUp(
-  state: MockState,
+  state: WalletState,
   input: { amountCents: number; ref: string; now: number },
 ): LedgerEntry {
   state.balanceCents += input.amountCents;
@@ -82,7 +102,7 @@ export function applyTopUp(
  * amount or it takes nothing, and it records how much of it was free.
  */
 export function applyCharge(
-  state: MockState,
+  state: WalletState,
   input: { totalCents: number; ref: string; description: string; now: number },
 ): { entry: LedgerEntry; fromFree: number; fromPaid: number } {
   if (state.balanceCents < input.totalCents) {
@@ -108,7 +128,7 @@ export function applyCharge(
  * a failure has lost nothing at all.
  */
 export function applyRefund(
-  state: MockState,
+  state: WalletState,
   input: {
     amountCents: number;
     freeCents: number;
@@ -152,6 +172,6 @@ export function insufficientBalance(
 }
 
 /** The invariant the nightly reconciliation of spec section 8 asserts. */
-export function ledgerBalance(state: MockState): number {
+export function ledgerBalance(state: WalletState): number {
   return state.ledger.reduce((sum, entry) => sum + entry.deltaCents, 0);
 }
