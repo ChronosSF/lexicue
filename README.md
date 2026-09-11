@@ -11,18 +11,26 @@ deterministic fake model, and the fast lane has now been run against the real
 Claude API: see "as measured on 11 September 2026" below, and the three cache
 bugs those runs found. The economy lane has still never touched the real API.
 
-**Phase 2, in progress** is the web app in `apps/web`, with a mock backend that
-runs the whole product in the browser. Nothing on AWS exists yet.
+**Phase 2, in progress** is the web app in `apps/web`. It runs two ways: against
+a local development API that translates with Claude for real, or against a mock
+backend that runs the whole product in the browser with a fake model. Nothing on
+AWS exists yet.
 
 ```sh
 pnpm install
-pnpm dev            # the app at http://localhost:5173, in mock mode
+cp .env.example .env   # and paste the key after the equals sign
+
+pnpm dev        # the app at http://localhost:5173 and the local API on 5174
+pnpm dev:mock   # the app alone, in the browser, with no key and no network
 ```
 
-The demo lands signed in, with a wallet and a finished upload in its history,
-and the evaluation corpus offered as sample files. Read `apps/web/README.md`
-for what it can and cannot do, and for every place the specification was
-ambiguous and a reading had to be chosen.
+`pnpm dev` starts both processes and stops both on Ctrl+C. Without a key it
+stops and says so, naming `.env.example`, rather than quietly falling back to
+the mock. Drop a subtitle file, pick a language, and a real translation comes
+back downloadable with its report; **the money is simulated and the app says
+so**, but the model spend is real. Read `apps/web/README.md` for what is real
+and what is not, for the reason the local API is its own process, and for every
+place the specification was ambiguous or wrong.
 
 ## Packages
 
@@ -34,21 +42,26 @@ ambiguous and a reading had to be chosen.
 | `packages/shared`    | The zod schemas of the API contract in specification section 7.3, shared by the app now and the Lambda handlers later.                                               |
 | `apps/web`           | The React SPA: the three states of section 2, with a mock backend that implements section 7.3 in the browser.                                                        |
 | `packages/cli`       | `pnpm harness translate …`                                                                                                                                           |
+| `packages/dev-api`   | The contract of section 7.3 on plain `node:http`, running the harness in-process, so `pnpm dev` can translate for real. Development only; nothing deployed runs it.  |
 | `evals`              | The eval corpus, the hard and advisory metrics, the LLM-judge rubric and the runner.                                                                                 |
 
 ## Getting started
 
 ```sh
 pnpm install
-pnpm dev         # the web app in mock mode
+pnpm dev         # the web app and the local API; needs a key in .env
+pnpm dev:mock    # the web app alone, in mock mode; needs nothing
+pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 571 tests, in two Vitest projects: the packages and the app
+pnpm test        # 603 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
 
-All of them are offline and take under a minute in total.
+Everything except `pnpm dev` is offline and takes under a minute in total. The
+tests never touch the network or the key: the local API is driven over real HTTP
+against the deterministic fake model client.
 
 ## Running the command-line tool
 
