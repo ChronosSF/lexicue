@@ -365,6 +365,25 @@ describe("the report of spec section 3.5", () => {
     expect(result.report.glossaryEntriesApplied).toBe(2);
   });
 
+  /**
+   * The first batch of a file is the request that writes the cached prefix, so
+   * it reads nothing by construction: the glossary pass cannot warm it, because
+   * its structured-output schema is part of the cache key. A file small enough
+   * to be one batch therefore has nothing to say about the cache, and saying it
+   * anyway made the command-line tool cry wolf on every corpus file.
+   */
+  it("says nothing about the cache when the file is a single batch", async () => {
+    const result = await translateFile({
+      client: new FakeTranslationModelClient(),
+      config: config({ batchSize: 120 }),
+      options: options(),
+      job: job(),
+      now,
+    });
+    expect(result.report.batches).toBe(1);
+    expect(result.report.warnings.some((w) => w.includes("prompt cache"))).toBe(false);
+  });
+
   it("warns when the batches read nothing from the prompt cache", async () => {
     // A client that reports no cache reads is exactly the symptom spec section
     // 4.8 says to watch for: the prefix was silently changed.

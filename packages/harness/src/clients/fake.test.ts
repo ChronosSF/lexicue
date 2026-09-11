@@ -136,24 +136,45 @@ describe("the cached prefix", () => {
     expect(first.user[1]?.text).not.toBe(second.user[1]?.text);
   });
 
-  it("is byte identical between the glossary pass and the batches", () => {
-    const ctx = context();
-    const glossary = buildGlossaryRequest(ctx, null);
-    const batch = buildBatchRequest(ctx, { glossary: emptyGlossary(), cues: CUES });
-    expect(cachedPrefix(batch)).toBe(cachedPrefix(glossary));
-  });
-
-  it("reports a cache write on the first request of a job and reads after it", async () => {
+  it("reports a cache write on the first batch of a job and reads on the next", async () => {
     const client = new FakeTranslationModelClient();
     const ctx = context();
-    const first = await client.complete(buildGlossaryRequest(ctx, null));
+    const first = await client.complete(
+      buildBatchRequest(ctx, { glossary: emptyGlossary(), cues: CUES.slice(0, 2) }),
+    );
     const second = await client.complete(
-      buildBatchRequest(ctx, { glossary: emptyGlossary(), cues: CUES }),
+      buildBatchRequest(ctx, { glossary: emptyGlossary(), cues: CUES.slice(2) }),
     );
     expect(first.usage.cacheCreationInputTokens).toBeGreaterThan(0);
     expect(first.usage.cacheReadInputTokens).toBe(0);
     expect(second.usage.cacheCreationInputTokens).toBe(0);
     expect(second.usage.cacheReadInputTokens).toBeGreaterThan(0);
+  });
+
+  /**
+   * Measured against Sonnet 5 on 11 September 2026: a glossary pass and a batch
+   * pass over the same system prompt and the same source document each wrote
+   * the prefix, and only a second batch read it. The structured-output schema
+   * renders ahead of the system prompt, the way a tool list does, so identical
+   * prefix bytes are not enough to share an entry. Spec section 4.4 assumes the
+   * glossary pass warms what the batches read; it cannot.
+   */
+  it("does not let the glossary pass warm the batches, despite identical prefix bytes", async () => {
+    const client = new FakeTranslationModelClient();
+    const ctx = context();
+    const glossaryRequest = buildGlossaryRequest(ctx, null);
+    const batchRequestForJob = buildBatchRequest(ctx, {
+      glossary: emptyGlossary(),
+      cues: CUES,
+    });
+
+    const glossaryResponse = await client.complete(glossaryRequest);
+    const batchResponse = await client.complete(batchRequestForJob);
+
+    expect(glossaryResponse.usage.cacheCreationInputTokens).toBeGreaterThan(0);
+    // The batch had to write the prefix itself rather than read the one above.
+    expect(batchResponse.usage.cacheReadInputTokens).toBe(0);
+    expect(batchResponse.usage.cacheCreationInputTokens).toBeGreaterThan(0);
   });
 
   it("uses the one-hour breakpoint on the economy lane", () => {

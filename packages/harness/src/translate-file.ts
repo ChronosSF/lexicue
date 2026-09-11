@@ -352,16 +352,26 @@ function collectedFor(
 }
 
 /**
- * The warning of spec section 4.8: a fast-lane batch whose
- * `cache_read_input_tokens` is zero after the glossary pass means the cached
- * prefix was silently changed, which is always a bug in the request builder.
+ * The warning of spec section 4.8, narrowed to the case that is a bug.
+ *
+ * One batch of a file always reads nothing, because it is the request that
+ * writes the prefix. Spec section 4.4 expects the glossary pass to have warmed
+ * it, but a request's structured-output schema is part of its cache key and the
+ * glossary's schema is not the batch schema, so the entry the glossary pass
+ * writes is a different entry and no batch can read it (measured against
+ * Sonnet 5 on 11 September 2026). Warning on a cold first batch therefore cried
+ * wolf on every single-batch file.
+ *
+ * What must never happen is a file whose batches *all* read nothing, because
+ * {@link runFastLaneBatches} lets the first one finish before the rest start:
+ * every later batch has a warm entry waiting unless the prefix bytes moved.
  */
 function detectCacheProblem(results: readonly RawBatchResult[]): string | null {
   const answered = results.filter(
     (result) => result.error === null && result.usage.outputTokens > 0,
   );
-  if (answered.length === 0) return null;
-  const cold = answered.filter((result) => result.usage.cacheReadInputTokens === 0);
-  if (cold.length === 0) return null;
-  return `${cold.length.toString()} of ${answered.length.toString()} batches read nothing from the prompt cache; the cached prefix is probably not byte-identical across requests.`;
+  // A single batch is one cache write and no evidence either way.
+  if (answered.length < 2) return null;
+  if (answered.some((result) => result.usage.cacheReadInputTokens > 0)) return null;
+  return `None of ${answered.length.toString()} batches read the prompt cache the first one wrote; the cached prefix is probably not byte-identical across requests.`;
 }
