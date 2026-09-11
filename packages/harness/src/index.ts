@@ -146,7 +146,13 @@ export {
   type UntranslatedCue,
   type UploadReport,
 } from "./report.js";
-export { translateFile, type TranslateFileInput, type TranslatedFile } from "./translate-file.js";
+export {
+  translateFile,
+  type FileProgress,
+  type ProgressCallback,
+  type TranslateFileInput,
+  type TranslatedFile,
+} from "./translate-file.js";
 export {
   translateUpload,
   type TranslateUploadInput,

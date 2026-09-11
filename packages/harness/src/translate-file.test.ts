@@ -366,6 +366,29 @@ describe("the report of spec section 3.5", () => {
   });
 
   /**
+   * Spec section 7.5 has the worker run the harness "with a progress callback
+   * that updates `batchesDone` after every batch", which is what drives the
+   * per-file bar of section 2.1. The total arrives first, so a bar can be drawn
+   * before any batch has answered.
+   */
+  it("reports batches completed out of total as it goes", async () => {
+    const seen: string[] = [];
+    await translateFile({
+      client: new FakeTranslationModelClient(),
+      config: config({ batchSize: 1, concurrency: 4 }),
+      options: options(),
+      job: job(),
+      now,
+      onProgress: (progress) => {
+        expect(progress.jobId).toBe("job-1");
+        expect(progress.fileName).toBe("the-keeper.srt");
+        seen.push(`${progress.batchesDone.toString()}/${progress.batchesTotal.toString()}`);
+      },
+    });
+    expect(seen).toEqual(["0/4", "1/4", "2/4", "3/4", "4/4"]);
+  });
+
+  /**
    * Nothing warms the prefix for a file's batches — the glossary pass writes a
    * different cache entry, because its structured-output schema is part of the
    * key — so a cold fan-out is a race in which every batch writes its own copy

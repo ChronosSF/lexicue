@@ -90,14 +90,19 @@ export async function runFastLaneBatches(
   context: RequestContext,
   plan: readonly BatchPlanEntry[],
   glossary: FileGlossary,
+  /** Called as each batch answers, for the progress of spec section 7.5. */
+  onBatchDone?: () => void,
 ): Promise<RawBatchResult[]> {
   const [first, ...rest] = plan;
   if (first === undefined) return [];
   const warmed = await runOneBatch(client, context, first, glossary);
+  onBatchDone?.();
   if (rest.length === 0) return [warmed];
-  const remainder = await mapWithConcurrency(rest, context.config.concurrency, async (entry) =>
-    runOneBatch(client, context, entry, glossary),
-  );
+  const remainder = await mapWithConcurrency(rest, context.config.concurrency, async (entry) => {
+    const result = await runOneBatch(client, context, entry, glossary);
+    onBatchDone?.();
+    return result;
+  });
   return [warmed, ...remainder];
 }
 

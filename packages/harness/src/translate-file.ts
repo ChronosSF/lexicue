@@ -40,7 +40,23 @@ export interface TranslateFileInput {
   collected?: ReadonlyMap<string, RawBatchResult>;
   /** Injectable clock, so wall times in tests are deterministic. */
   now?: () => number;
+  /** Batches completed out of total, as spec section 7.5 asks for. */
+  onProgress?: ProgressCallback;
 }
+
+/**
+ * How far one file has got. Spec section 7.5 has the worker run the harness
+ * "with a progress callback that updates `batchesDone` after every batch", and
+ * this is that callback's argument: the two numbers a progress bar needs.
+ */
+export interface FileProgress {
+  jobId: string;
+  fileName: string;
+  batchesDone: number;
+  batchesTotal: number;
+}
+
+export type ProgressCallback = (progress: FileProgress) => void;
 
 export interface TranslatedFile {
   document: SubtitleDocument;
@@ -92,10 +108,33 @@ export async function translateFile(input: TranslateFileInput): Promise<Translat
 
   const plan = planBatches(job.jobId, cues, config.batchSize);
   const collected = input.collected;
+
+  let batchesDone = 0;
+  const reportProgress = (): void => {
+    input.onProgress?.({
+      jobId: job.jobId,
+      fileName: job.fileName,
+      batchesDone,
+      batchesTotal: plan.length,
+    });
+  };
+  // Nothing is done yet, but the total is now known, which is what turns a
+  // spinner into a bar.
+  reportProgress();
+
   const initial =
     collected === undefined
-      ? await runFastLaneBatches(client, context, plan, glossary)
+      ? await runFastLaneBatches(client, context, plan, glossary, () => {
+          batchesDone += 1;
+          reportProgress();
+        })
       : plan.map((entry) => collectedFor(collected, entry));
+  if (collected !== undefined) {
+    // The economy lane collects a whole Message Batch at once; there is no
+    // partial progress to report, only its arrival.
+    batchesDone = plan.length;
+    reportProgress();
+  }
 
   const translations = new Map<number, string[]>();
   const untranslated: UntranslatedCue[] = [];

@@ -19,7 +19,7 @@ import { buildSourceDocument, type RequestContext } from "./requests.js";
 import type { UploadReport } from "./report.js";
 import { runSeasonGlossaryPass, type SeasonSample } from "./season.js";
 import type { FileGlossary, SeasonGlossary } from "./schemas.js";
-import { translateFile, type TranslatedFile } from "./translate-file.js";
+import { translateFile, type ProgressCallback, type TranslatedFile } from "./translate-file.js";
 import { toProtocolCue, type TranslationJob, type TranslationOptions } from "./types.js";
 
 export interface TranslateUploadInput {
@@ -32,6 +32,8 @@ export interface TranslateUploadInput {
   collect?: CollectOptions;
   /** Called as each file finishes, for progress output. */
   onFile?: (file: TranslatedFile) => void;
+  /** Called as each batch of each file answers (spec section 7.5). */
+  onProgress?: ProgressCallback;
 }
 
 export interface TranslatedUpload {
@@ -115,6 +117,7 @@ async function runFastLane(
       job,
       seasonGlossary: running,
       ...(input.now === undefined ? {} : { now: input.now }),
+      ...(input.onProgress === undefined ? {} : { onProgress: input.onProgress }),
     });
     addUsage(usage, file.usage);
     // The file's glossary is the season's plus whatever this episode added, so
@@ -198,6 +201,7 @@ async function runEconomyLane(
       glossary: entry.glossary,
       collected,
       ...(input.now === undefined ? {} : { now: input.now }),
+      ...(input.onProgress === undefined ? {} : { onProgress: input.onProgress }),
     });
     addUsage(usage, file.usage);
     input.onFile?.(file);
