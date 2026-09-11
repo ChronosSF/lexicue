@@ -207,9 +207,54 @@ carried across episodes — "The Light has opinions" is `Das Licht hat Meinungen
 in all three, and Marta, Petar and Skerry Point are spelled identically
 throughout.
 
+### Haiku 4.5 against Sonnet 5, as measured on 11 September 2026
+
+The same four files — `comedy/the-lamp-room.srt` and the three-episode season,
+119 cues, 3,158 characters of dialogue — into German and Bulgarian, fast lane.
+Sonnet 5 at effort `medium`; Haiku 4.5 with no effort parameter and no thinking,
+which is the only cheap configuration it has. Every one of the sixteen outputs
+re-parsed with every index line, timing line and inline tag identical to its
+source, every cue translated, no repairs, and no fallback to Opus 5 on any file.
+
+| Arm                  | Model cost | Per 1,000 chars | Tokens in | Tokens out | Cache reads | Wall time |
+| -------------------- | ---------: | --------------: | --------: | ---------: | ----------: | --------: |
+| German, Sonnet 5     |    $0.1184 |         $0.0375 |    14,619 |      7,538 |       9,075 |    68.0 s |
+| German, Haiku 4.5    |    $0.0487 |         $0.0154 |    21,623 |      5,410 |           0 |   134.6 s |
+| Bulgarian, Sonnet 5  |    $0.1256 |         $0.0398 |    16,199 |      7,950 |       9,075 |    87.2 s |
+| Bulgarian, Haiku 4.5 |    $0.0416 |         $0.0132 |    18,593 |      4,593 |           0 |   107.0 s |
+
+Haiku costs **37% of Sonnet** across both languages and takes **about twice as
+long** in wall time. It reads nothing from the prompt cache at this file length
+and is right not to: its minimum cacheable prefix is 4,096 tokens and the
+largest request here was 3,419, so no entry is ever created. At feature length
+the prefix clears that bar and the gap should widen further in Haiku's favour.
+
+Cheaper is not the same as good enough, and the season is where it shows:
+
+- **Haiku renders the season's own location three ways in three episodes.**
+  `Skerry Point` is `СКЕРИСТИ ПУНКТ` in episode one, `СКЕЪРИС ПОИНТ` in episode
+  two and left as `SKERRY POINT` in Latin script in episode three. Sonnet writes
+  `СКЕРИ ПОЙНТ` in all three. Character names hold on both models.
+- **Haiku leaves screen text untranslated in German.** All six episode title and
+  end cards — `SKERRY POINT - EPISODE ONE`, `END OF EPISODE ONE` — come back in
+  English; Sonnet translates them (`FOLGE EINS`). The cues are structurally
+  valid, so no hard metric catches it.
+- **The running joke drifts.** `The Light has opinions` is `hat Meinungen` in
+  all of Sonnet's episodes; Haiku moves to the singular `hat eine Meinung`
+  through episode two and back again in episode three. Haiku's Bulgarian keeps
+  the joke consistent.
+
+Haiku also flags worse on the advisory yardsticks in German: 21 reading-speed
+and 17 line-length findings against Sonnet's 15 and 12 over the same 119 cues.
+
+The outputs are under `.local/runs/2026-09-11-2200-*`, one directory per arm,
+each with its `report.json`. No judge was run: these are structural, cost and
+consistency measurements plus a reading of the files.
+
 Still unmeasured: every effort level other than `medium`, every language other
-than German, the economy lane's cache-hit rate and turnaround, and Haiku 4.5.
-The economy lane has never been run against the real API at all.
+than German and Bulgarian, the economy lane's cache-hit rate and turnaround, and
+Haiku 4.5 with a thinking budget. The economy lane has never been run against
+the real API at all, and no LLM judge has scored either model.
 
 ## Handover: what was left out, and what was simplified
 

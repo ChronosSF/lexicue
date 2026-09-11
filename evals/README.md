@@ -97,6 +97,11 @@ visible in review.
 - The blind pairwise preference test against the cheap tools of specification
   section 6.7, which decides whether the fast lane keeps its premium. It needs
   native speakers, not code.
-- The effort sweep (`low`, `medium`, `high`) and the Haiku 4.5 comparison, both
-  of which the runner already supports through `--model` and a config override,
-  but which have not been run because they need the real API.
+- The effort sweep (`low`, `medium`, `high`), which the runner already supports
+  through `--model` and a config override, but which has not been run because it
+  needs the real API.
+- A judged Haiku 4.5 comparison. The unjudged one has been run — through the
+  command-line tool rather than this runner, over four files into German and
+  Bulgarian; the root `README.md` has its cost, structural and cross-episode
+  consistency results. Nobody has yet scored either model on the rubric in
+  `src/rubric.ts`, which is what would turn that into a quality verdict.
