@@ -11,6 +11,7 @@ import {
 } from "@lexicue/pricing";
 import {
   ApiError,
+  MAX_FILES_PER_DAY,
   applyCharge,
   applyGrant,
   applyRefund,
@@ -85,9 +86,6 @@ import { batchesFor, jobsOf, toBatchSummary, toBatchView } from "./views.js";
  * an hour) and the checkout, which credits the balance itself because there is
  * no Stripe webhook to do it.
  */
-
-/** Per-user limits of spec section 3.2 that live nowhere else. */
-const MAX_FILES_PER_DAY = 100;
 
 /** A file named like this fails on purpose, to show the refund of section 2.3. */
 const FAILURE_FILE_PATTERN = /fail/i;

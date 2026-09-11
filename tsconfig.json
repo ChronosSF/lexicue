@@ -1,11 +1,26 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/subtitles" },
-    { "path": "./packages/pricing" },
-    { "path": "./packages/harness" },
-    { "path": "./packages/shared" },
-    { "path": "./packages/cli" },
-    { "path": "./evals" }
+    {
+      "path": "./packages/subtitles"
+    },
+    {
+      "path": "./packages/pricing"
+    },
+    {
+      "path": "./packages/harness"
+    },
+    {
+      "path": "./packages/shared"
+    },
+    {
+      "path": "./packages/cli"
+    },
+    {
+      "path": "./evals"
+    },
+    {
+      "path": "./packages/dev-api"
+    }
   ]
 }

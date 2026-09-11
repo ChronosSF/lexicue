@@ -4,6 +4,14 @@ import { CentsSchema, DeltaCentsSchema, IdSchema, InstantSchema } from "./common
 
 /** `GET /api/me` and `DELETE /api/me` of spec section 7.3. */
 
+/**
+ * The two per-user limits of spec section 3.2 that are not properties of a
+ * file, so they have no home in `@lexicue/subtitles` with the size and cue
+ * caps. Every implementation of the contract has to enforce the same numbers.
+ */
+export const MAX_FILES_PER_DAY = 100;
+export const CONCURRENT_FAST_FILES = 3;
+
 /** Why the balance moved (spec section 7.4). */
 export const LedgerReasonSchema = z.enum(["topup", "grant", "charge", "refund"]);
 

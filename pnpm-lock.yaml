@@ -142,6 +142,27 @@ importers:
         specifier: workspace:*
         version: link:../subtitles
 
+  packages/dev-api:
+    dependencies:
+      '@lexicue/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@lexicue/harness':
+        specifier: workspace:*
+        version: link:../harness
+      '@lexicue/pricing':
+        specifier: workspace:*
+        version: link:../pricing
+      '@lexicue/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@lexicue/subtitles':
+        specifier: workspace:*
+        version: link:../subtitles
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
+
   packages/harness:
     dependencies:
       '@anthropic-ai/sdk':
