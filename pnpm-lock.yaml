@@ -114,6 +114,9 @@ importers:
 
   evals:
     dependencies:
+      '@subtitle-translator/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
       '@subtitle-translator/harness':
         specifier: workspace:*
         version: link:../packages/harness

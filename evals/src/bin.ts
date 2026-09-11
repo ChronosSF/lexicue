@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { join } from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { loadEnvFile } from "@subtitle-translator/cli";
 import { isLane } from "@subtitle-translator/pricing";
 import {
   AnthropicTranslationClient,
@@ -31,9 +33,10 @@ Options
   --label <text>         Names the results folder
   -h, --help             Show this help
 
-Without --fake the runner reads ANTHROPIC_API_KEY from the environment and
-refuses to start if it is not set. A full run against the real model costs
-about $25 to $35 (specification section 10.4).
+Without --fake the runner reads ANTHROPIC_API_KEY from .env at the repository
+root, falling back to the environment, and refuses to start if it is not set. A
+value in .env wins, so this checkout always uses its own key. A full run against
+the real model costs about $25 to $35 (specification section 10.4).
 `;
 
 async function main(): Promise<number> {
@@ -73,7 +76,7 @@ async function main(): Promise<number> {
     const apiKey = process.env["ANTHROPIC_API_KEY"];
     if (apiKey === undefined || apiKey.trim() === "") {
       process.stderr.write(
-        "ANTHROPIC_API_KEY is not set. Export it to run the eval against the real model, or add --fake to exercise the runner without spending anything.\n",
+        "ANTHROPIC_API_KEY is not set. Copy .env.example to .env at the repository root and paste the key there, or export it, or add --fake to exercise the runner without spending anything.\n",
       );
       return 2;
     }
@@ -102,6 +105,13 @@ async function main(): Promise<number> {
   process.stdout.write(summarise(result));
   process.stdout.write(`\nResults written to ${directory}\n`);
   return result.hardMetricsPassed ? 0 : 1;
+}
+
+// The key for this checkout lives in .env at the repository root, two levels
+// up from this file whether it runs from src or from dist.
+const envFile = loadEnvFile(fileURLToPath(new URL("../../.env", import.meta.url)), process.env);
+for (const key of envFile.overridden) {
+  process.stderr.write(`${key} from ${envFile.path} overrides the value in the environment.\n`);
 }
 
 process.exitCode = await main();

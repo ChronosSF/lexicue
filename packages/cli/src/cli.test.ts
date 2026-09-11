@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseSubtitleText } from "@subtitle-translator/subtitles";
 import { FakeTranslationModelClient } from "@subtitle-translator/harness";
 import { UsageError, parseCommandLine } from "./args.js";
+import { loadEnvFile } from "./env-file.js";
 import { outputPathFor, readJobs, resolveInputPaths } from "./files.js";
 import { main } from "./main.js";
 import { MISSING_KEY_MESSAGE, type RunEnvironment } from "./run.js";
@@ -340,5 +341,64 @@ describe("running against the real API", () => {
     });
     expect(code).toBe(2);
     expect(errors[0]).toBe(MISSING_KEY_MESSAGE);
+  });
+});
+
+describe("the .env file", () => {
+  it("puts every key in the file into the environment, in file order", () => {
+    const path = write(
+      ".env",
+      [
+        "# the key for this checkout",
+        "ANTHROPIC_API_KEY=sk-ant-test",
+        'OTHER="two words"',
+        "",
+      ].join("\n"),
+    );
+    const env: Record<string, string | undefined> = {};
+    expect(loadEnvFile(path, env)).toEqual({
+      path,
+      found: true,
+      loaded: ["ANTHROPIC_API_KEY", "OTHER"],
+      overridden: [],
+    });
+    expect(env).toEqual({ ANTHROPIC_API_KEY: "sk-ant-test", OTHER: "two words" });
+  });
+
+  it("replaces a different value already in the environment and reports it", () => {
+    const path = write(".env", "ANTHROPIC_API_KEY=sk-ant-file\nSAME=x\n");
+    const env: Record<string, string | undefined> = {
+      ANTHROPIC_API_KEY: "sk-ant-shell",
+      SAME: "x",
+      UNTOUCHED: "y",
+    };
+    expect(loadEnvFile(path, env).overridden).toEqual(["ANTHROPIC_API_KEY"]);
+    expect(env).toEqual({ ANTHROPIC_API_KEY: "sk-ant-file", SAME: "x", UNTOUCHED: "y" });
+  });
+
+  it("treats an empty value as set, so an unfilled copy of .env.example refuses to run", async () => {
+    const env: Record<string, string | undefined> = { ANTHROPIC_API_KEY: "sk-ant-shell" };
+    loadEnvFile(write(".env", "ANTHROPIC_API_KEY=\n"), env);
+    expect(env["ANTHROPIC_API_KEY"]).toBe("");
+    const errors: string[] = [];
+    const code = await main(["translate", write("film.srt", SRT), "--to", "de"], {
+      log: () => undefined,
+      logError: (line) => errors.push(line),
+      env,
+    });
+    expect(code).toBe(2);
+    expect(errors[0]).toBe(MISSING_KEY_MESSAGE);
+    expect(errors[0]).toContain(".env");
+  });
+
+  it("leaves the environment alone when there is no file", () => {
+    const path = join(directory, ".env");
+    const env: Record<string, string | undefined> = { ANTHROPIC_API_KEY: "sk-ant-shell" };
+    expect(loadEnvFile(path, env)).toEqual({ path, found: false, loaded: [], overridden: [] });
+    expect(env).toEqual({ ANTHROPIC_API_KEY: "sk-ant-shell" });
+  });
+
+  it("fails loudly when the path exists but is not a readable file", () => {
+    expect(() => loadEnvFile(directory, {})).toThrow();
   });
 });

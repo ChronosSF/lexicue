@@ -42,7 +42,7 @@ pnpm install
 pnpm dev         # the web app in mock mode
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 566 tests, in two Vitest projects: the packages and the app
+pnpm test        # 571 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -78,8 +78,15 @@ untranslated, because English is not Bulgarian.
 
 Everything is in place; no code needs to change.
 
-1. **Set the key.** `export ANTHROPIC_API_KEY=sk-ant-…`. Without it the tool
-   refuses to start and says so; with it, `--fake` is simply left off.
+1. **Set the key.** Copy `.env.example` to `.env` at the repository root and
+   paste the key after the equals sign. The file is git-ignored, and only the
+   command-line tool and the eval runner read it; nothing deployed does, since
+   specification section 9.8 keeps secrets in Secrets Manager. A value in
+   `.env` wins over one exported in the shell, so this checkout always uses
+   its own key, and the tool says so on stderr whenever it overrides one.
+   Exporting `ANTHROPIC_API_KEY` still works when there is no file. Without a
+   key the tool refuses to start and says so; with one, `--fake` is simply
+   left off.
 2. **Run the smallest thing first.**
 
    ```sh

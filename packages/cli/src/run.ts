@@ -25,7 +25,7 @@ export interface RunEnvironment {
 }
 
 export const MISSING_KEY_MESSAGE =
-  "ANTHROPIC_API_KEY is not set. Export it before running against the real API, or add --fake to run the whole pipeline against the deterministic fake model instead.";
+  "ANTHROPIC_API_KEY is not set. Copy .env.example to .env at the repository root and paste the key there, or export it, or add --fake to run the whole pipeline against the deterministic fake model instead.";
 
 /** Runs `harness translate`. Returns the process exit code. */
 export async function runTranslate(

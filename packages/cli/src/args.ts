@@ -175,8 +175,9 @@ Options
   --fake                 Use the deterministic fake model; no API key needed
   -h, --help             Show this help
 
-Without --fake the tool reads ANTHROPIC_API_KEY from the environment and
-refuses to start if it is not set.
+Without --fake the tool reads ANTHROPIC_API_KEY from .env at the repository
+root, falling back to the environment, and refuses to start if it is not set. A
+value in .env wins, so this checkout always uses its own key.
 
 Examples
   pnpm harness translate film.srt --to de --fake

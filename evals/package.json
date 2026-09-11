@@ -13,6 +13,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@subtitle-translator/cli": "workspace:*",
     "@subtitle-translator/harness": "workspace:*",
     "@subtitle-translator/pricing": "workspace:*",
     "@subtitle-translator/subtitles": "workspace:*",
