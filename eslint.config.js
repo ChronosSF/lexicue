@@ -6,7 +6,15 @@ import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "evals/results/**"],
+    ignores: [
+      "**/dist/**",
+      "**/coverage/**",
+      "**/node_modules/**",
+      "evals/results/**",
+      // Scratch space for local runs: outputs, reports and one-off diagnostics,
+      // none of it part of the project (see .gitignore).
+      ".local/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
