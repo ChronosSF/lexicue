@@ -62,6 +62,36 @@ const now = (): number => {
   return clock;
 };
 
+/**
+ * What the API reports when the prefix is below the model's cacheable minimum:
+ * nothing written, nothing read, and every prompt token billed as uncached
+ * input. The fake client simulates a working cache, so a test about a model
+ * that cannot cache has to undo that.
+ */
+function uncached(client: TranslationModelClient): TranslationModelClient {
+  return {
+    name: "uncached",
+    retriesTransportErrors: false,
+    async complete(request) {
+      const response = await client.complete(request);
+      const { usage } = response;
+      return {
+        ...response,
+        usage: {
+          ...usage,
+          inputTokens:
+            usage.inputTokens + usage.cacheCreationInputTokens + usage.cacheReadInputTokens,
+          cacheCreationInputTokens: 0,
+          cacheReadInputTokens: 0,
+          cacheCreation5mInputTokens: 0,
+          cacheCreation1hInputTokens: 0,
+        },
+      };
+    },
+    countTokens: (request) => client.countTokens(request),
+  };
+}
+
 describe("the structural guarantees of spec section 4.1", () => {
   it("returns the same number of cues in the same order", async () => {
     const source = job();
@@ -220,6 +250,42 @@ describe("retries", () => {
     expect(result.report.fallbackModelUsed).toBe(true);
     expect(result.report.warnings.some((w) => w.includes("claude-opus-5"))).toBe(true);
     expect(result.report.untranslatedCues).toEqual([]);
+  });
+
+  /**
+   * The default fallback is Opus 5, which is right for the product and wrong
+   * for a comparison: one refused batch would put a more capable model's work
+   * into the arm under test. Pinning the fallback to the arm's own model keeps
+   * every request on one model, and the report still says a retry happened.
+   */
+  it("keeps every request on one model when the fallback is pinned to it", async () => {
+    const models: string[] = [];
+    const faulty = new FaultInjectingModelClient(new FakeTranslationModelClient(), {
+      script: [null, { kind: "stop", reason: "refusal", category: "cyber" }],
+    });
+    const recording: TranslationModelClient = {
+      name: "recording",
+      retriesTransportErrors: false,
+      complete(request) {
+        models.push(request.model);
+        return faulty.complete(request);
+      },
+      countTokens: (request) => faulty.countTokens(request),
+    };
+    const result = await translateFile({
+      client: recording,
+      config: config({
+        model: "claude-haiku-4-5",
+        fallbackModel: "claude-haiku-4-5",
+        batchSize: 4,
+      }),
+      options: options(),
+      job: job(),
+      now,
+    });
+    expect(result.report.fallbackModelUsed).toBe(true);
+    expect([...new Set(models)]).toEqual(["claude-haiku-4-5"]);
+    expect(result.report.warnings.some((w) => w.includes("claude-opus-5"))).toBe(false);
   });
 
   it("flags the cues when the fallback model refuses too", async () => {
@@ -456,6 +522,70 @@ describe("the report of spec section 3.5", () => {
     });
     expect(result.report.batches).toBe(1);
     expect(result.report.warnings.some((w) => w.includes("prompt cache"))).toBe(false);
+  });
+
+  /**
+   * The two arms of a model comparison differ in what the request carried, and
+   * a run that does not record that cannot be reconciled later. Sonnet 5 keeps
+   * saying effort medium; Haiku 4.5 says what actually happened.
+   */
+  it("records that a model rejecting effort ran with neither effort nor thinking", async () => {
+    const result = await translateFile({
+      client: new FakeTranslationModelClient(),
+      config: config({ model: "claude-haiku-4-5", effort: "medium" }),
+      options: options(),
+      job: job(),
+      now,
+    });
+    expect(result.report.effort).toBe("none");
+    const note = result.report.warnings.find((w) => w.startsWith("claude-haiku-4-5:"));
+    expect(note).toContain("no effort setting");
+    expect(note).toContain("no thinking at all");
+  });
+
+  it("says nothing of the kind for the product's own model", async () => {
+    const result = await translateFile({
+      client: new FakeTranslationModelClient(),
+      config: config(),
+      options: options(),
+      job: job(),
+      now,
+    });
+    expect(result.report.effort).toBe("medium");
+    expect(result.report.warnings.some((w) => w.includes("no thinking at all"))).toBe(false);
+  });
+
+  /**
+   * A prefix shorter than the model's minimum is never cached, so a Haiku 4.5
+   * run over a corpus-sized file reads and writes nothing. That is arithmetic,
+   * not the symptom of spec section 4.8, and the report has to say which of the
+   * two it is looking at.
+   */
+  it("records rather than warns when the file is too short to cache on this model", async () => {
+    const result = await translateFile({
+      client: uncached(new FakeTranslationModelClient()),
+      config: config({ model: "claude-haiku-4-5" }),
+      options: options(),
+      job: job(),
+      now,
+    });
+    const note = result.report.warnings.find((w) => w.includes("Prompt caching did nothing"));
+    expect(note).toContain("4096");
+    expect(result.report.warnings.some((w) => w.includes("not byte-identical"))).toBe(false);
+  });
+
+  /** The same short file on Sonnet 5, where 1,024 tokens is the bar, says nothing. */
+  it("says nothing about a short prefix on a model that would have cached it", async () => {
+    const result = await translateFile({
+      client: new FakeTranslationModelClient(),
+      config: config(),
+      options: options(),
+      job: job(),
+      now,
+    });
+    expect(result.report.warnings.some((w) => w.includes("Prompt caching did nothing"))).toBe(
+      false,
+    );
   });
 
   it("warns when the batches read nothing from the prompt cache", async () => {

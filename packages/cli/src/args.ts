@@ -22,6 +22,8 @@ export interface TranslateCommand {
   /** Use the deterministic fake client instead of the real API. */
   fake: boolean;
   model: string | undefined;
+  /** Pins the model a refused batch is retried on (spec section 4.6). */
+  fallbackModel: string | undefined;
   effort: Effort | undefined;
   batchSize: number | undefined;
   concurrency: number | undefined;
@@ -59,6 +61,7 @@ export function parseCommandLine(argv: readonly string[]): Command {
       formality: { type: "string" },
       context: { type: "string" },
       model: { type: "string" },
+      "fallback-model": { type: "string" },
       effort: { type: "string" },
       "batch-size": { type: "string" },
       concurrency: { type: "string" },
@@ -131,6 +134,7 @@ export function parseCommandLine(argv: readonly string[]): Command {
     translateLyrics: values["no-lyrics"] !== true,
     fake: values.fake === true,
     model: values.model,
+    fallbackModel: values["fallback-model"],
     effort: effort as Effort | undefined,
     batchSize: positiveInteger(values["batch-size"], "--batch-size"),
     concurrency: positiveInteger(values.concurrency, "--concurrency"),
@@ -166,7 +170,10 @@ Options
   --line-handling <mode> reflow (default) or keep, to keep the source line count
   --no-lyrics            Leave song lyrics in the source language
   --model <id>           Override the configured model id
+  --fallback-model <id>  Model a refused batch is retried on (default: claude-opus-5).
+                         Pin it to --model to keep a comparison to one model.
   --effort <level>       low, medium (default), high, xhigh or max
+                         Ignored by models that reject it, such as claude-haiku-4-5
   --batch-size <n>       Cues per request (default: 120)
   --concurrency <n>      Batches in flight per file (default: 12)
   --out <dir>            Write outputs to this directory instead of alongside the inputs

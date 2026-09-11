@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { ModelTransportError } from "../errors.js";
+import type { AutoParseableOutputFormat } from "@anthropic-ai/sdk/lib/parser";
+import { HarnessConfigError, ModelTransportError } from "../errors.js";
+import { capabilitiesFor, type ModelCapabilities } from "../model-capabilities.js";
 import type {
   BatchModelClient,
   BatchOutcome,
@@ -9,6 +11,7 @@ import type {
   BatchStatus,
   ModelRequest,
   ModelResponse,
+  Effort,
   ModelStopReason,
   ModelUsage,
   PromptBlock,
@@ -37,6 +40,11 @@ export interface AnthropicClientOptions {
  * prose. No sampling parameters are set — Sonnet 5 rejects them — and there is
  * no assistant prefill.
  *
+ * What varies by model comes from {@link capabilitiesFor}, never from a string
+ * check here: Haiku 4.5 rejects `output_config.effort`, so the field is left
+ * off for it entirely, and since it has no adaptive thinking, omitting
+ * `thinking` — which every request does — means it runs without thinking.
+ *
  * The SDK's own timeout and its two automatic retries on 429 and 5xx responses
  * are left in place, which is why `retriesTransportErrors` is true: the harness
  * does not add a second layer of backoff on top of them.
@@ -62,10 +70,7 @@ export class AnthropicTranslationClient implements BatchModelClient {
       const response = await this.client.messages.parse({
         model: request.model,
         max_tokens: request.maxTokens,
-        output_config: {
-          effort: request.effort,
-          format: zodOutputFormat(request.outputSchema),
-        },
+        output_config: toOutputConfig(request),
         system: request.system.map(toTextBlock),
         messages: [{ role: "user", content: request.user.map(toTextBlock) }],
       });
@@ -152,6 +157,35 @@ export function toTextBlock(block: PromptBlock): Anthropic.TextBlockParam {
 }
 
 /**
+ * The `output_config` for one request, built from the model's capabilities.
+ *
+ * `effort` is included only where the model accepts it: Haiku 4.5 answers a
+ * request carrying the field with an error, so sending it "just in case" turns
+ * every Haiku call into a 400. Both lanes build this the same way, so the
+ * prefix bytes — and therefore the cache key — cannot drift between them.
+ */
+export interface RequestOutputConfig<T> {
+  /** Absent on a model that rejects the field; never sent as undefined. */
+  effort?: Effort;
+  format: AutoParseableOutputFormat<T>;
+}
+
+export function toOutputConfig<T>(
+  request: ModelRequest<T>,
+  capabilities: ModelCapabilities = capabilitiesFor(request.model),
+): RequestOutputConfig<T> {
+  if (!capabilities.acceptsStructuredOutputs) {
+    throw new HarnessConfigError(
+      `${request.model} does not support structured outputs, and the harness has no plain-JSON path. Choose another model.`,
+    );
+  }
+  return {
+    ...(capabilities.acceptsEffort ? { effort: request.effort } : {}),
+    format: zodOutputFormat(request.outputSchema),
+  };
+}
+
+/**
  * The same request object the interactive lane builds, handed to
  * `client.messages.batches.create` instead (spec section 4.5). Structured
  * outputs and prompt caching are both supported in batch requests.
@@ -162,10 +196,7 @@ export function toCreateParams<T>(
   return {
     model: request.model,
     max_tokens: request.maxTokens,
-    output_config: {
-      effort: request.effort,
-      format: zodOutputFormat(request.outputSchema),
-    },
+    output_config: toOutputConfig(request),
     system: request.system.map(toTextBlock),
     messages: [{ role: "user", content: request.user.map(toTextBlock) }],
   };

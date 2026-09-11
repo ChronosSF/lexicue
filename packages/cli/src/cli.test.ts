@@ -73,6 +73,8 @@ describe("parsing the command line", () => {
       "1970s police drama",
       "--model",
       "claude-haiku-4-5",
+      "--fallback-model",
+      "claude-haiku-4-5",
       "--effort",
       "low",
       "--batch-size",
@@ -100,6 +102,7 @@ describe("parsing the command line", () => {
       translateLyrics: false,
       fake: true,
       model: "claude-haiku-4-5",
+      fallbackModel: "claude-haiku-4-5",
       effort: "low",
       batchSize: 60,
       concurrency: 4,
@@ -229,6 +232,22 @@ describe("translating from the command line", () => {
     expect(printed).toContain("price $0.10 on the fast lane");
     expect(printed).toContain("model cost $");
     expect(printed).toContain("claude-sonnet-5, effort medium");
+  });
+
+  /**
+   * `--model` has to carry the model's capabilities with it, not just its name:
+   * Haiku 4.5 rejects `output_config.effort`, so the run sends none and the
+   * report says so instead of repeating the configured level.
+   */
+  it("reports no effort for a model that does not accept one", async () => {
+    const input = write("film.srt", SRT);
+    const environment = capture();
+    const code = await main(
+      ["translate", input, "--to", "de", "--fake", "--model", "claude-haiku-4-5"],
+      environment,
+    );
+    expect(code).toBe(0);
+    expect(environment.out.join("\n")).toContain("claude-haiku-4-5, effort none");
   });
 
   it("writes without a byte-order mark when asked", async () => {

@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { parseSubtitleText } from "@lexicue/subtitles";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_HARNESS_CONFIG, resolveConfig } from "../config.js";
-import { ModelTransportError } from "../errors.js";
+import { HarnessConfigError, ModelTransportError } from "../errors.js";
 import { findTargetLanguage } from "../languages.js";
 import { buildBatchRequest, buildSourceDocument, type RequestContext } from "../requests.js";
 import { emptyGlossary } from "../schemas.js";
@@ -13,13 +13,14 @@ import {
   mapUsage,
   toBatchResultItem,
   toCreateParams,
+  toOutputConfig,
   toTextBlock,
   toTransportError,
 } from "./anthropic.js";
 
 const SRT = ["1", "00:00:01,000 --> 00:00:03,000", "Hello there.", "", ""].join("\n");
 
-function context(lane: "fast" | "economy" = "fast"): RequestContext {
+function context(lane: "fast" | "economy" = "fast", model?: string): RequestContext {
   const target = findTargetLanguage("de");
   if (target === undefined) throw new Error("de missing");
   const options: TranslationOptions = {
@@ -31,15 +32,18 @@ function context(lane: "fast" | "economy" = "fast"): RequestContext {
     translateLyrics: true,
   };
   return {
-    config: resolveConfig(),
+    config: resolveConfig(model === undefined ? {} : { model }),
     options,
     jobId: "job-1",
     sourceDocument: buildSourceDocument(parseSubtitleText(SRT).cues.map(toProtocolCue)),
   };
 }
 
-function request(lane: "fast" | "economy" = "fast"): ReturnType<typeof buildBatchRequest> {
-  return buildBatchRequest(context(lane), {
+function request(
+  lane: "fast" | "economy" = "fast",
+  model?: string,
+): ReturnType<typeof buildBatchRequest> {
+  return buildBatchRequest(context(lane, model), {
     glossary: emptyGlossary("English"),
     cues: parseSubtitleText(SRT).cues.map(toProtocolCue),
   });
@@ -79,6 +83,40 @@ describe("the request the SDK is given", () => {
     expect(params).not.toHaveProperty("top_p");
     expect(params).not.toHaveProperty("top_k");
     expect(params.max_tokens).toBe(DEFAULT_HARNESS_CONFIG.maxTokens);
+  });
+
+  /**
+   * Haiku 4.5 answers a request carrying `output_config.effort` with an error
+   * rather than ignoring the field, so it has to be left off entirely. The
+   * structured-output format stays, because Haiku 4.5 does support it: the
+   * request shape is otherwise identical, which is what keeps the two arms of a
+   * model comparison comparable.
+   */
+  it("leaves the effort off for a model that rejects it, and keeps the format", () => {
+    const params = toCreateParams(request("fast", "claude-haiku-4-5"));
+    expect(params.output_config).not.toHaveProperty("effort");
+    expect(params.output_config?.format).toMatchObject({ type: "json_schema" });
+    expect(params.model).toBe("claude-haiku-4-5");
+    expect(params.max_tokens).toBe(DEFAULT_HARNESS_CONFIG.maxTokens);
+  });
+
+  /** Neither model is ever asked to think: Sonnet 5 adapts, Haiku 4.5 does not think. */
+  it("never sends a thinking parameter on any model", () => {
+    expect(toCreateParams(request())).not.toHaveProperty("thinking");
+    expect(toCreateParams(request("fast", "claude-haiku-4-5"))).not.toHaveProperty("thinking");
+  });
+
+  it("refuses a model that cannot do structured outputs rather than guessing", () => {
+    // No current model needs this, but a table entry saying so must stop the
+    // run rather than silently send a field the model will reject.
+    expect(() =>
+      toOutputConfig(request(), {
+        acceptsEffort: true,
+        thinking: "adaptive",
+        acceptsStructuredOutputs: false,
+        minimumCacheablePrefixTokens: 1024,
+      }),
+    ).toThrow(HarnessConfigError);
   });
 
   it("never sends an assistant turn, so there is no prefill", () => {
@@ -294,6 +332,26 @@ describe("the client against a stubbed SDK", () => {
     const sent = parse.mock.calls[0]?.[0] as Anthropic.MessageCreateParamsNonStreaming;
     expect(sent.model).toBe("claude-sonnet-5");
     expect(sent.output_config?.effort).toBe("medium");
+  });
+
+  it("sends no effort to Haiku 4.5 on the interactive path either", async () => {
+    const parse = vi.fn().mockResolvedValue({
+      parsed_output: { cues: [{ i: 1, t: "Hallo." }] },
+      stop_reason: "end_turn",
+      stop_details: null,
+      model: "claude-haiku-4-5",
+      usage: { input_tokens: 5, output_tokens: 6 },
+    });
+    const client = new AnthropicTranslationClient({ client: stub({ parse }) });
+    const response = await client.complete(request("fast", "claude-haiku-4-5"));
+
+    // The model that actually answered is carried back, so a run can never
+    // attribute one model's work to another.
+    expect(response.model).toBe("claude-haiku-4-5");
+    const sent = parse.mock.calls[0]?.[0] as Anthropic.MessageCreateParamsNonStreaming;
+    expect(sent.model).toBe("claude-haiku-4-5");
+    expect(sent.output_config).not.toHaveProperty("effort");
+    expect(sent.output_config?.format).toMatchObject({ type: "json_schema" });
   });
 
   it("reports a refusal category from stop_details", async () => {

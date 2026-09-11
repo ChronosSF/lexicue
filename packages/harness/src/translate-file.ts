@@ -9,6 +9,7 @@ import {
 } from "./batches.js";
 import type { HarnessConfig } from "./config.js";
 import { runGlossaryPass } from "./glossary.js";
+import { capabilitiesFor } from "./model-capabilities.js";
 import {
   addUsage,
   emptyUsage,
@@ -173,8 +174,11 @@ export async function translateFile(input: TranslateFileInput): Promise<Translat
     }
   }
 
+  const thinkingNote = describeThinkingAndEffort(config);
+  if (thinkingNote !== null) warnings.push(thinkingNote);
+
   if (collected === undefined) {
-    const cacheWarning = detectCacheProblem(initial);
+    const cacheWarning = describeCaching(initial, config.model);
     if (cacheWarning !== null) warnings.push(cacheWarning);
   }
 
@@ -391,6 +395,28 @@ function collectedFor(
 }
 
 /**
+ * Records what the model did about thinking and effort, where that is not what
+ * the configuration asked for. On a model with no adaptive thinking and no
+ * `effort` parameter this is the whole difference between the arms of a model
+ * comparison, so it belongs in the file's own report rather than in a person's
+ * memory of how the run was started.
+ */
+function describeThinkingAndEffort(config: HarnessConfig): string | null {
+  const capabilities = capabilitiesFor(config.model);
+  if (capabilities.acceptsEffort && capabilities.thinking === "adaptive") return null;
+  const parts: string[] = [];
+  if (!capabilities.acceptsEffort) {
+    parts.push(
+      `it accepts no effort setting, so the configured effort (${config.effort}) was not sent`,
+    );
+  }
+  if (capabilities.thinking !== "adaptive") {
+    parts.push("it has no adaptive thinking, so this file ran with no thinking at all");
+  }
+  return `${config.model}: ${parts.join(", and ")}. That is the model's normal cheap configuration, not a fault.`;
+}
+
+/**
  * The warning of spec section 4.8, narrowed to the case that is a bug.
  *
  * One batch of a file always reads nothing, because it is the request that
@@ -401,16 +427,45 @@ function collectedFor(
  * Sonnet 5 on 11 September 2026). Warning on a cold first batch therefore cried
  * wolf on every single-batch file.
  *
- * What must never happen is a file whose batches *all* read nothing, because
- * {@link runFastLaneBatches} lets the first one finish before the rest start:
- * every later batch has a warm entry waiting unless the prefix bytes moved.
+ * The second way a miss is arithmetic rather than a bug is a prefix shorter
+ * than the model's minimum cacheable prefix: the API then writes and reads
+ * nothing whatever `cache_control` says. Haiku 4.5 asks for 4,096 tokens, four
+ * times Sonnet 5's, so a short file that caches on Sonnet cannot cache on
+ * Haiku. That is recorded, not warned about.
+ *
+ * What must never happen is a file whose batches *all* read nothing while the
+ * prefix was long enough to cache, because {@link runFastLaneBatches} lets the
+ * first one finish before the rest start: every later batch has a warm entry
+ * waiting unless the prefix bytes moved.
  */
-function detectCacheProblem(results: readonly RawBatchResult[]): string | null {
+export function describeCaching(results: readonly RawBatchResult[], model: string): string | null {
   const answered = results.filter(
     (result) => result.error === null && result.usage.outputTokens > 0,
   );
+  if (answered.length === 0) return null;
+
+  const touchedCache = answered.some(
+    (result) => result.usage.cacheReadInputTokens > 0 || result.usage.cacheCreationInputTokens > 0,
+  );
+  const minimum = capabilitiesFor(model).minimumCacheablePrefixTokens;
+  // With nothing cached, every prompt token is billed as uncached input, so the
+  // largest request's own total is an upper bound on its cacheable prefix.
+  const largestRequest = Math.max(...answered.map(totalInputTokens));
+  if (!touchedCache && largestRequest < minimum) {
+    return `Prompt caching did nothing on this file: ${model} caches no prefix shorter than ${minimum.toString()} tokens and the largest request here was ${largestRequest.toString()}. Expected at this file length, and nothing was lost to a cache write.`;
+  }
+
   // A single batch is one cache write and no evidence either way.
   if (answered.length < 2) return null;
   if (answered.some((result) => result.usage.cacheReadInputTokens > 0)) return null;
   return `None of ${answered.length.toString()} batches read the prompt cache the first one wrote; the cached prefix is probably not byte-identical across requests.`;
+}
+
+/** Every prompt token of one request, however it was billed. */
+function totalInputTokens(result: RawBatchResult): number {
+  return (
+    result.usage.inputTokens +
+    result.usage.cacheCreationInputTokens +
+    result.usage.cacheReadInputTokens
+  );
 }

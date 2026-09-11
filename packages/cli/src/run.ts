@@ -95,6 +95,7 @@ export async function runTranslate(
 function configFor(command: TranslateCommand): HarnessConfig {
   return resolveConfig({
     ...(command.model === undefined ? {} : { model: command.model }),
+    ...(command.fallbackModel === undefined ? {} : { fallbackModel: command.fallbackModel }),
     ...(command.effort === undefined ? {} : { effort: command.effort }),
     ...(command.batchSize === undefined ? {} : { batchSize: command.batchSize }),
     ...(command.concurrency === undefined ? {} : { concurrency: command.concurrency }),

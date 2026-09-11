@@ -8,6 +8,14 @@ export {
 } from "./errors.js";
 
 export {
+  DEFAULT_MODEL_CAPABILITIES,
+  MODEL_CAPABILITIES,
+  canCachePrefix,
+  capabilitiesFor,
+  type ModelCapabilities,
+} from "./model-capabilities.js";
+
+export {
   addUsage,
   emptyUsage,
   supportsBatches,
@@ -147,6 +155,7 @@ export {
   type UploadReport,
 } from "./report.js";
 export {
+  describeCaching,
   translateFile,
   type FileProgress,
   type ProgressCallback,

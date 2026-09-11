@@ -3,6 +3,7 @@ import { cueDialogueChars, stripMarkup, type SubtitleDocument } from "@lexicue/s
 import type { HarnessConfig } from "./config.js";
 import { costBreakdown, modelCostUsd, type CostBreakdown } from "./cost.js";
 import type { TargetLanguage } from "./languages.js";
+import { capabilitiesFor } from "./model-capabilities.js";
 import type { ModelUsage } from "./model-client.js";
 
 /** A cue the harness could not translate, listed for the user (spec 3.5). */
@@ -125,7 +126,9 @@ export function buildFileReport(input: BuildReportInput): FileReport {
     model: input.model,
     fallbackModelUsed: input.fallbackModelUsed,
     promptVersion: input.promptVersion,
-    effort: config.effort,
+    // What the request actually carried, not what configuration asked for: a
+    // model that rejects `output_config.effort` ran at no effort setting at all.
+    effort: capabilitiesFor(input.model).acceptsEffort ? config.effort : "none",
     batchSize: config.batchSize,
     batches: input.batches,
 
