@@ -10,6 +10,10 @@ import { DEFAULT_API_PORT, missingKeyMessage, resolveApiKey } from "./env.js";
  * The key is checked here, before anything starts, so a missing one is a clear
  * sentence naming `.env.example` rather than a browser full of failed requests
  * or a silent fall back to the mock.
+ *
+ * The API is started first and the app only once it is answering. Vite steps to
+ * the next free port when 5173 is taken, and the next free port is the API's, so
+ * starting them together is a race the API loses.
  */
 
 const { apiKey } = resolveApiKey(process.env);
@@ -23,11 +27,16 @@ const apiPort = Number(process.env["LEXICUE_API_PORT"] ?? DEFAULT_API_PORT.toStr
 const children: ChildProcess[] = [];
 let stopping = false;
 
-function start(name: string, command: string, args: string[]): ChildProcess {
-  const child = spawn(command, args, {
+/**
+ * The command is a single string rather than a command plus an argument array,
+ * because passing an array with `shell: true` is what Node's DEP0190 warns
+ * about. Nothing here comes from anywhere but this file.
+ */
+function start(name: string, command: string): ChildProcess {
+  const child = spawn(command, {
     cwd: root,
     stdio: "inherit",
-    shell: process.platform === "win32",
+    shell: true,
     env: { ...process.env, LEXICUE_API_PORT: apiPort.toString() },
   });
   child.on("exit", (code) => {
@@ -48,11 +57,32 @@ function stop(code: number): void {
   process.exitCode = code;
 }
 
-start("The local API", "pnpm", ["exec", "tsx", "packages/dev-api/src/bin.ts"]);
-start("The web app", "pnpm", ["--filter", "web", "dev"]);
+/** Resolves when the API answers, or false if it gave up first. */
+async function waitForApi(api: ChildProcess): Promise<boolean> {
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (api.exitCode !== null) return false;
+    try {
+      const response = await fetch(`http://localhost:${apiPort.toString()}/api/pricing`);
+      if (response.ok) return true;
+    } catch {
+      // Not listening yet.
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+  }
+  process.stderr.write(`The local API did not answer on port ${apiPort.toString()}.\n`);
+  return false;
+}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     stop(0);
   });
+}
+
+const api = start("The local API", "pnpm exec tsx packages/dev-api/src/bin.ts");
+if (await waitForApi(api)) {
+  start("The web app", "pnpm --filter web dev");
+} else {
+  stop(1);
 }

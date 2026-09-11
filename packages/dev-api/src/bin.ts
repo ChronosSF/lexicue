@@ -28,7 +28,7 @@ const api = createDevApi({ client: new AnthropicTranslationClient({ apiKey }) })
 await api.listen(port);
 
 process.stdout.write(
-  `Lexicue development API on http://127.0.0.1:${port.toString()}\n` +
+  `Lexicue development API on http://localhost:${port.toString()}\n` +
     `  translating with claude-sonnet-5; uploads and outputs under ${api.store.dir}\n` +
     `  money is simulated: top-ups credit the balance with no card and no Stripe\n`,
 );

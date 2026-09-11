@@ -74,7 +74,9 @@ async function start(options: { verified?: boolean; background?: boolean } = {})
     stateDir: dir,
     runInBackground: options.background ?? false,
   });
-  const server = await api.listen(0);
+  // An explicit IPv4 loopback so the port the test connects to is the port the
+  // server bound; `pnpm dev` uses the default, "localhost".
+  const server = await api.listen(0, "127.0.0.1");
   const address = server.address();
   if (address === null || typeof address === "string") throw new Error("no port");
   open.push({ server, dir });

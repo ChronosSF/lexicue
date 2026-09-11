@@ -93,6 +93,12 @@ export interface DevApiOptions {
 export interface DevApi {
   readonly store: DevStore;
   handle: (request: IncomingMessage, response: ServerResponse) => void;
+  /**
+   * Defaults to `localhost` rather than `127.0.0.1` so that the port is taken
+   * on whichever stack Vite probes when it looks for a free one. Binding only
+   * IPv4 left Vite free to take the same port number on IPv6, and the two then
+   * sat on "the same port" talking past each other.
+   */
   listen: (port: number, host?: string) => Promise<Server>;
   /** Resolves once every translation this server started has settled. */
   idle: () => Promise<void>;
@@ -118,7 +124,7 @@ export function createDevApi(options: DevApiOptions): DevApi {
         send(response, error instanceof ApiError ? error : internal(error));
       });
     },
-    listen(port, host = "127.0.0.1") {
+    listen(port, host = "localhost") {
       const server = createServer((request, response) => {
         api.handle(request, response);
       });
