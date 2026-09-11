@@ -366,6 +366,57 @@ describe("the report of spec section 3.5", () => {
   });
 
   /**
+   * Nothing warms the prefix for a file's batches — the glossary pass writes a
+   * different cache entry, because its structured-output schema is part of the
+   * key — so a cold fan-out is a race in which every batch writes its own copy
+   * and none reads. Measured against Sonnet 5 on 11 September 2026, twelve
+   * concurrent requests over a cold prefix wrote it twelve times. Letting the
+   * first batch land alone turns that back into one write and N-1 reads, which
+   * is the cache economics spec section 5.4 prices the product on.
+   */
+  it("lets the first batch write the cache before the rest fan out", async () => {
+    const base = new FakeTranslationModelClient();
+    const cacheOutcomes: string[] = [];
+    let inFlight = 0;
+    let mostInFlight = 0;
+    const recording: TranslationModelClient = {
+      name: "recording",
+      retriesTransportErrors: false,
+      async complete(request) {
+        const isBatch = request.purpose === "batch";
+        if (isBatch) {
+          inFlight += 1;
+          mostInFlight = Math.max(mostInFlight, inFlight);
+        }
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1);
+        });
+        const response = await base.complete(request);
+        if (isBatch) {
+          inFlight -= 1;
+          cacheOutcomes.push(response.usage.cacheCreationInputTokens > 0 ? "write" : "read");
+        }
+        return response;
+      },
+      countTokens: (request) => base.countTokens(request),
+    };
+
+    const result = await translateFile({
+      client: recording,
+      config: config({ batchSize: 1, concurrency: 4 }),
+      options: options(),
+      job: job(),
+      now,
+    });
+
+    expect(result.report.batches).toBe(4);
+    // The proof: four batches, and never four in flight. The first one is alone
+    // while it writes the prefix, and only then do the other three run together.
+    expect(mostInFlight).toBe(3);
+    expect(cacheOutcomes).toEqual(["write", "read", "read", "read"]);
+  });
+
+  /**
    * The first batch of a file is the request that writes the cached prefix, so
    * it reads nothing by construction: the glossary pass cannot warm it, because
    * its structured-output schema is part of the cache key. A file small enough

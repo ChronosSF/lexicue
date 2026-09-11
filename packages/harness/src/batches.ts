@@ -66,16 +66,39 @@ export interface RawBatchResult {
   error: string | null;
 }
 
-/** Runs a file's batches on the fast lane, up to `concurrency` at a time. */
+/**
+ * Runs a file's batches on the fast lane: the first one alone, then the rest up
+ * to `concurrency` at a time.
+ *
+ * The first batch runs alone because it is the one that writes the cached
+ * prefix. Nothing else can have warmed it — spec section 4.4 expects the
+ * glossary pass to, but a request's structured-output schema is part of its
+ * cache key and the glossary's schema is not the batch schema — so a cold
+ * fan-out is a race that nobody wins. Measured against Sonnet 5 on 11 September
+ * 2026: twelve concurrent requests over a cold prefix each wrote their own copy
+ * of it and none read, and the same twelve run afterwards all read and wrote
+ * nothing.
+ *
+ * On the film of spec section 5.4 that race costs about $0.74 of cache writes
+ * against the $0.12 the section budgets, which is most of the file's margin.
+ * Letting one batch land first buys it back for one batch of latency. The
+ * economy lane needs none of this: its requests go into one Message Batch and
+ * its cache hits are best-effort either way (spec section 4.5).
+ */
 export async function runFastLaneBatches(
   client: TranslationModelClient,
   context: RequestContext,
   plan: readonly BatchPlanEntry[],
   glossary: FileGlossary,
 ): Promise<RawBatchResult[]> {
-  return mapWithConcurrency(plan, context.config.concurrency, async (entry) =>
+  const [first, ...rest] = plan;
+  if (first === undefined) return [];
+  const warmed = await runOneBatch(client, context, first, glossary);
+  if (rest.length === 0) return [warmed];
+  const remainder = await mapWithConcurrency(rest, context.config.concurrency, async (entry) =>
     runOneBatch(client, context, entry, glossary),
   );
+  return [warmed, ...remainder];
 }
 
 /** Runs a single batch and reduces the answer to a {@link RawBatchResult}. */
