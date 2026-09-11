@@ -7,8 +7,9 @@ repository.
 serialiser, the metered price function, a command-line tool and the evaluation
 corpus and runner. Its exit criterion — a film and a three-episode season
 translating with 100% structural fidelity on both lanes — is met against the
-deterministic fake model; the one remaining step is a run against the real
-Claude API with an `ANTHROPIC_API_KEY`, which nothing here has done.
+deterministic fake model, and the fast lane has now been run against the real
+Claude API: see "as measured on 11 September 2026" below, and the three cache
+bugs those runs found. The economy lane has still never touched the real API.
 
 **Phase 2, in progress** is the web app in `apps/web`, with a mock backend that
 runs the whole product in the browser. Nothing on AWS exists yet.
@@ -76,7 +77,8 @@ untranslated, because English is not Bulgarian.
 
 ## Testing against the real API
 
-Everything is in place; no code needs to change.
+Steps 1 to 3 have now been run; what they measured, and the three fixes they
+forced, are in the section after this one.
 
 1. **Set the key.** Copy `.env.example` to `.env` at the repository root and
    paste the key after the equals sign. The file is git-ignored, and only the
@@ -93,12 +95,16 @@ Everything is in place; no code needs to change.
    pnpm harness translate evals/corpus/comedy/the-lamp-room.srt --to de
    ```
 
-   38 cues, about 1,700 characters of dialogue: one glossary call and one batch,
-   roughly **two cents** of model spend. It exercises the whole path — the
+   38 cues, 1,062 characters of dialogue: one glossary call and one batch,
+   **three cents** of model spend as measured. It exercises the whole path — the
    cached prefix, structured outputs, validation, the re-parse — for less than
-   the price of nothing. Check the printed report for a cache warning: if it
-   says the batches read nothing from the prompt cache, the prefix is not
-   byte-identical and that is a bug worth stopping for.
+   the price of nothing.
+
+   A file this small is one batch, so it reads nothing from the prompt cache and
+   is right not to: the batch that runs first is the one that writes the entry,
+   and the glossary pass cannot warm it (see the measurements below). The
+   warning to stop for is the one that fires when a file has several batches and
+   _none_ of them read, which means the prefix bytes moved between requests.
 
 3. **Then the season, on both lanes.**
 
@@ -107,8 +113,9 @@ Everything is in place; no code needs to change.
    pnpm harness translate "evals/corpus/season/*.srt" --to de --lane economy
    ```
 
-   Three episodes, about 15 cents on the fast lane. The economy run submits one
-   Message Batch and then polls for up to 23 hours, so start it and leave it.
+   Three episodes, 9 cents of model spend on the fast lane as measured. The
+   economy run submits one Message Batch and then polls for up to 23 hours, so
+   start it and leave it; it has never been run against the real API.
 
 4. **Then the eval.**
 
@@ -142,6 +149,54 @@ The cost model itself (`packages/harness/src/cost.ts`) carries the price table
 of specification section 5.1 and reproduces the worked breakdown of section 5.4
 to the cent, so a measured usage record converts to dollars without a
 spreadsheet.
+
+### As measured on 11 September 2026
+
+The first real runs this repository has made, on `claude-sonnet-5` at effort
+`medium`, fast lane, into German. Both files came back with every index, timing
+line, control code and inline tag identical to the source, re-parsed and
+compared cue by cue, and every cue translated.
+
+| Run                        | Cues | Dialogue chars | Tokens in | Tokens out | Cache reads | Cache writes | Model cost | Wall time | Price charged |
+| -------------------------- | ---: | -------------: | --------: | ---------: | ----------: | -----------: | ---------: | --------: | ------------: |
+| `comedy/the-lamp-room.srt` |   38 |          1,062 |     2,126 |      1,878 |           0 |        3,620 |    $0.0321 |    18.7 s |         $0.10 |
+| `season/*.srt`, 3 episodes |   81 |          2,096 |    12,493 |      5,660 |       9,075 |        1,148 |    $0.0863 |    49.4 s |         $0.30 |
+
+**These numbers do not scale to the specification's estimates, and they are not
+meant to.** Section 5.3 models a 350-cue sitcom episode at $0.20 and a
+1,400-cue film at $0.75, which is $0.0125 of model cost per 1,000 characters of
+dialogue. The corpus files are 23 to 39 cues, twenty to forty times shorter, so
+the fixed cost of a file — the 1,500-token system prompt, the glossary pass and
+its thousand output tokens, one cache write — is never amortised and the same
+arithmetic gives $0.030 and $0.041 per 1,000 characters. The 10-cent minimum
+price covers it, exactly as section 6.4 intends, and both runs were profitable.
+What section 5.3 predicts cannot be confirmed or refuted until the full-length
+fixtures of section 10.4 exist; writing them remains the first thing to do.
+
+Two things here _are_ measured rather than modelled, and both changed the code:
+
+- **A file's glossary pass cannot warm the prefix its batches read.** A
+  request's structured-output schema renders ahead of the system prompt, the way
+  a tool list does, and is part of the cache key. Three requests over one
+  document proved it: the glossary pass wrote the prefix, a batch with
+  byte-identical prefix bytes wrote it again instead of reading, and only a
+  second batch read. Specification section 4.4 assumes otherwise.
+- **A cold fan-out is a race nobody wins.** Twelve concurrent batch requests
+  over a prefix nothing had warmed each wrote their own copy and none read; the
+  same twelve run afterwards all read and wrote nothing. On the film of section
+  5.4 that is about $0.74 of cache writes against the $0.12 the section budgets.
+  The fast lane now lets the first batch land before the rest fan out, which
+  costs roughly one batch of latency and restores the section's arithmetic.
+
+The season run shows the cache working: 9,075 read tokens against 1,148 written,
+because the three files share the system-prompt entry, and the season glossary
+carried across episodes — "The Light has opinions" is `Das Licht hat Meinungen`
+in all three, and Marta, Petar and Skerry Point are spelled identically
+throughout.
+
+Still unmeasured: every effort level other than `medium`, every language other
+than German, the economy lane's cache-hit rate and turnaround, and Haiku 4.5.
+The economy lane has never been run against the real API at all.
 
 ## Handover: what was left out, and what was simplified
 
