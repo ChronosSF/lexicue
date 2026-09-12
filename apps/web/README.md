@@ -67,8 +67,10 @@ variable is not a command on Windows and a dependency to say so is not worth it.
 | Progress      | A pure function of a shortened clock                 | The harness's own count of batches answered                  |
 | Money         | Simulated                                            | Simulated                                                    |
 
-Both are implementations of the contract in specification section 7.3, not sets
-of canned responses. Both charge the wallet with the transaction rules of
+The real backend is a thin HTTP adapter over `packages/core`, which is where
+every rule actually lives; the mock is a second implementation of the same
+contract in the browser. Both are implementations of section 7.3, not sets of
+canned responses. Both charge the wallet with the transaction rules of
 section 7.4, refuse uploads they cannot afford with the 402 and its shortfall,
 refund failed files, enforce the limits of section 3.2, keep an append-only
 ledger and delete files after 24 hours. The rules that decide what is refused

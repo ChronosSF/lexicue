@@ -1,8 +1,9 @@
 {
-  "name": "@lexicue/dev-api",
+  "name": "@lexicue/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,12 +14,9 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@lexicue/cli": "workspace:*",
-    "@lexicue/core": "workspace:*",
     "@lexicue/harness": "workspace:*",
     "@lexicue/pricing": "workspace:*",
     "@lexicue/shared": "workspace:*",
-    "@lexicue/subtitles": "workspace:*",
-    "fflate": "0.8.3"
+    "@lexicue/subtitles": "workspace:*"
   }
 }

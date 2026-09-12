@@ -22,6 +22,7 @@ export default defineConfig({
             "@lexicue/pricing": src("./packages/pricing/src/index.ts"),
             "@lexicue/harness": src("./packages/harness/src/index.ts"),
             "@lexicue/cli": src("./packages/cli/src/index.ts"),
+            "@lexicue/core": src("./packages/core/src/index.ts"),
             "@lexicue/shared": src("./packages/shared/src/index.ts"),
           },
         },

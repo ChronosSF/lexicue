@@ -20,6 +20,9 @@
       "path": "./evals"
     },
     {
+      "path": "./packages/core"
+    },
+    {
       "path": "./packages/dev-api"
     }
   ]

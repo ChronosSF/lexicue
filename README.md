@@ -41,10 +41,37 @@ place the specification was ambiguous or wrong.
 | `packages/pricing`   | The metered price function, the top-up amounts and the free balance. Zero dependencies, browser-safe.                                                                |
 | `packages/harness`   | The model client interface, the versioned prompts, the season and file glossary passes, both lanes, validation and retries, reassembly, verification and the report. |
 | `packages/shared`    | The zod schemas of the API contract in specification section 7.3, shared by the app now and the Lambda handlers later.                                               |
+| `packages/core`      | The authoritative logic behind that contract, with no storage and no transport in it: parse and price, charge and refund, the state machine, retention.              |
 | `apps/web`           | The React SPA: the three states of section 2, with a mock backend that implements section 7.3 in the browser.                                                        |
 | `packages/cli`       | `pnpm harness translate …`                                                                                                                                           |
-| `packages/dev-api`   | The contract of section 7.3 on plain `node:http`, running the harness in-process, so `pnpm dev` can translate for real. Development only; nothing deployed runs it.  |
+| `packages/dev-api`   | An HTTP adapter over `packages/core` on plain `node:http`, with a disk store, so `pnpm dev` can translate for real. Development only; nothing deployed runs it.      |
 | `evals`              | The eval corpus, the hard and advisory metrics, the LLM-judge rubric and the runner.                                                                                 |
+
+## Where the authority lives
+
+`packages/core` holds everything that decides something: what a file is, what
+it costs, whether the balance covers it, what state an upload is in, when files
+are deleted. It has no storage and no transport in it. Two interfaces are all it
+asks of the world, and both are shaped like the AWS call a Phase 2 adapter will
+make:
+
+| The core asks for      | Locally               | In Phase 2                                            |
+| ---------------------- | --------------------- | ----------------------------------------------------- |
+| `MetadataStore.load`   | one JSON file read    | one DynamoDB `Query` on `USER#{sub}` (spec 7.4)       |
+| `MetadataStore.commit` | one JSON file write   | one `TransactWriteItems`, with the charge's condition |
+| `FileStore`            | files under `.local/` | `PutObject` / `GetObject` / `DeleteObject` (7.2)      |
+| `DownloadSigner`       | an HMAC'd local link  | a presigned S3 GET valid 15 minutes                   |
+
+`packages/dev-api` is an adapter over it: read a request, check the development
+token, call the core, write JSON. `packages/core/src/core.test.ts` drives the
+whole product — grant, upload, charge, translate, refund, retention, account
+deletion — against nothing but the in-memory stores, which is the same thing a
+Lambda handler will do with two different objects in the constructor.
+
+The one thing deliberately left in `@lexicue/shared` rather than moved into the
+core is the wallet arithmetic, because the browser's mock backend has to agree
+with it exactly and cannot import a package that reads files. The core owns the
+orchestration around it: which rows change, in what order, under what condition.
 
 ## Getting started
 
@@ -55,7 +82,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 624 tests, in two Vitest projects: the packages and the app
+pnpm test        # 636 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -592,7 +619,7 @@ locally on this commit.
 
 ## Test counts and coverage, as measured
 
-618 tests in 34 files, all offline: nothing in the suite touches the network or
+636 tests in 35 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
@@ -600,12 +627,13 @@ deterministic fake model client.
 | -------------------- | ---------: | ---------: | ---------: | ---------: |
 | `packages/subtitles` |     98.33% |     92.55% |       100% |     99.51% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
-| `packages/harness`   |     96.99% |     87.55% |     97.84% |     98.35% |
+| `packages/harness`   |     97.02% |     87.64% |     97.85% |     98.37% |
 | `packages/shared`    |     99.12% |     83.87% |       100% |       100% |
+| `packages/core`      |     92.23% |     78.19% |     96.53% |     93.64% |
 | `packages/cli`       |     91.62% |     74.24% |       100% |     92.86% |
-| `packages/dev-api`   |     79.93% |     70.85% |     87.58% |     82.11% |
+| `packages/dev-api`   |     77.74% |     72.83% |     84.75% |     79.64% |
 | `evals`              |     92.86% |     76.60% |     96.67% |     95.11% |
-| **All**              | **92.56%** | **82.81%** | **95.37%** | **94.06%** |
+| **All**              | **93.65%** | **83.63%** | **96.61%** | **94.98%** |
 
 `packages/dev-api` is the lowest, and deliberately so: the parts of it that are
 not covered are the executable entry points (`bin.ts`, `dev.ts`), which start

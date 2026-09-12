@@ -97,6 +97,17 @@ export default tseslint.config(
     },
   },
   {
+    // The core narrows a batch into a history row by dropping fields, the same
+    // way the app and the local API do.
+    files: ["packages/core/src/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true, argsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+    },
+  },
+  {
     // The local development API: Node built-ins are its whole job, and it
     // narrows a batch into a history row by dropping fields the same way the
     // app does.

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "types": ["node"]
+    "types": []
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist"],
@@ -19,12 +19,6 @@
     },
     {
       "path": "../shared"
-    },
-    {
-      "path": "../cli"
-    },
-    {
-      "path": "../core"
     }
   ]
 }
