@@ -678,9 +678,9 @@ describe("the economy lane", () => {
       new Map(plan.map((entry) => [entry.customId, entry])),
       DEFAULT_HARNESS_CONFIG,
     );
-    collected.set("job-1:1", {
+    collected.set("job-1_1", {
       index: 1,
-      customId: "job-1:1",
+      customId: "job-1_1",
       requestedIds: [3, 4],
       answers: [],
       stopReason: "other",

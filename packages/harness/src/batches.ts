@@ -15,10 +15,19 @@ import { BatchTranslationSchema, type FileGlossary } from "./schemas.js";
 import { withTransportRetry } from "./transport.js";
 import type { ProtocolCue } from "./types.js";
 
+/**
+ * What the Message Batches API accepts as a `custom_id`, quoted from the 400 it
+ * answers with when a request breaks it. Spec section 4.5 asks for
+ * `{jobId}:{batchIndex}`, and a colon is not in this set: the first real
+ * economy-lane submission on 12 September 2026 was rejected before a single
+ * batch ran. The separator is an underscore for that reason.
+ */
+export const CUSTOM_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
 /** One batch of cues, with the custom id the Message Batches API keys it by. */
 export interface BatchPlanEntry {
   index: number;
-  /** `{jobId}:{batchIndex}` (spec section 4.5). */
+  /** `{jobId}_{batchIndex}`; see {@link CUSTOM_ID_PATTERN}. */
   customId: string;
   cues: ProtocolCue[];
 }
@@ -35,20 +44,50 @@ export function planBatches(
     const index = entries.length;
     entries.push({
       index,
-      customId: `${jobId}:${index.toString()}`,
+      customId: `${jobId}_${index.toString()}`,
       cues: cues.slice(start, start + batchSize),
     });
   }
   return entries;
 }
 
-/** Parses `{jobId}:{batchIndex}` back into its parts. */
+/**
+ * Parses `{jobId}_{batchIndex}` back into its parts. The last underscore is the
+ * separator, so a job id may contain underscores of its own.
+ */
 export function parseCustomId(customId: string): { jobId: string; batchIndex: number } | null {
-  const separator = customId.lastIndexOf(":");
+  const separator = customId.lastIndexOf("_");
   if (separator === -1) return null;
   const batchIndex = Number(customId.slice(separator + 1));
   if (!Number.isInteger(batchIndex) || batchIndex < 0) return null;
   return { jobId: customId.slice(0, separator), batchIndex };
+}
+
+/**
+ * Fails a Message Batch before it is submitted if any `custom_id` would be
+ * rejected or would collide.
+ *
+ * The API validates `custom_id` and answers the whole submission with a 400
+ * naming one offending request, which on the economy lane means every file's
+ * glossary pass has already been paid for when the batch is refused. Checking
+ * here costs nothing and turns a paid failure into a local one whose message
+ * says which id and why.
+ */
+function assertCustomIdsAreSubmittable(requests: readonly BatchRequestItem[]): void {
+  const seen = new Set<string>();
+  for (const item of requests) {
+    if (!CUSTOM_ID_PATTERN.test(item.customId)) {
+      throw new RangeError(
+        `The Message Batches API will reject the custom_id "${item.customId}": it must match ${CUSTOM_ID_PATTERN.source}. Job ids reach the custom id unchanged, so this one has to be made of letters, digits, underscores and hyphens.`,
+      );
+    }
+    if (seen.has(item.customId)) {
+      throw new RangeError(
+        `Two requests in one Message Batch share the custom_id "${item.customId}", so their results could not be told apart.`,
+      );
+    }
+    seen.add(item.customId);
+  }
 }
 
 /** One batch's answer, exactly as the model gave it: not yet validated. */
@@ -147,7 +186,7 @@ export interface EconomyEntry {
 
 /**
  * Submits every file's batch requests as one Message Batch (spec section 4.5),
- * each with a `custom_id` of `{jobId}:{batchIndex}`.
+ * each with a `custom_id` of `{jobId}_{batchIndex}`.
  */
 export async function submitEconomyBatch(
   client: BatchModelClient,
@@ -165,6 +204,7 @@ export async function submitEconomyBatch(
       });
     }
   }
+  assertCustomIdsAreSubmittable(requests);
   const batchId = await client.submitBatch(requests);
   return { batchId, requests };
 }

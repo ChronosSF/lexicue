@@ -1,6 +1,7 @@
 import { parseSubtitleText } from "@lexicue/subtitles";
 import { describe, expect, it } from "vitest";
 import {
+  CUSTOM_ID_PATTERN,
   collectEconomyBatch,
   parseCustomId,
   planBatches,
@@ -97,14 +98,29 @@ describe("planBatches", () => {
     const cues = Array.from({ length: 250 }, (_unused, i) => ({ id: i + 1, lines: ["x"] }));
     const plan = planBatches("job-9", cues, 120);
     expect(plan.map((entry) => entry.cues.length)).toEqual([120, 120, 10]);
-    expect(plan.map((entry) => entry.customId)).toEqual(["job-9:0", "job-9:1", "job-9:2"]);
+    expect(plan.map((entry) => entry.customId)).toEqual(["job-9_0", "job-9_1", "job-9_2"]);
   });
 
   it("uses the custom id format the Message Batches API is keyed by", () => {
-    expect(parseCustomId("job-9:2")).toEqual({ jobId: "job-9", batchIndex: 2 });
-    expect(parseCustomId("a:b:7")).toEqual({ jobId: "a:b", batchIndex: 7 });
+    expect(parseCustomId("job-9_2")).toEqual({ jobId: "job-9", batchIndex: 2 });
+    expect(parseCustomId("a_b_7")).toEqual({ jobId: "a_b", batchIndex: 7 });
     expect(parseCustomId("no-index")).toBeNull();
-    expect(parseCustomId("job:-1")).toBeNull();
+    expect(parseCustomId("job_-1")).toBeNull();
+  });
+
+  /**
+   * Spec section 4.5 asks for `{jobId}:{batchIndex}`, and the Message Batches
+   * API rejects a colon. The first real economy submission, on 12 September
+   * 2026, came back 400 after every glossary pass had already been paid for,
+   * so this is the regression test that keeps the separator legal.
+   */
+  it("builds custom ids the Message Batches API accepts", () => {
+    const cues = Array.from({ length: 300 }, (_unused, i) => ({ id: i + 1, lines: ["x"] }));
+    for (const jobId of ["00-skerry-point-s01e01", "job_9", "01GX7Q2MPZ", "a"]) {
+      for (const entry of planBatches(jobId, cues, 120)) {
+        expect(entry.customId).toMatch(CUSTOM_ID_PATTERN);
+      }
+    }
   });
 
   it("refuses a batch size below one", () => {
@@ -363,12 +379,39 @@ describe("the economy lane", () => {
     ]);
     expect(batchId).toMatch(/^msgbatch_fake_/);
     expect(requests.map((request) => request.customId)).toEqual([
-      "ep1:0",
-      "ep1:1",
-      "ep1:2",
-      "ep2:0",
-      "ep2:1",
+      "ep1_0",
+      "ep1_1",
+      "ep1_2",
+      "ep2_0",
+      "ep2_1",
     ]);
+  });
+
+  /**
+   * The API validates every `custom_id` and answers the whole submission with
+   * one 400. On this lane that happens after every file's glossary pass has
+   * been paid for, so the check has to run before the request leaves.
+   */
+  it("refuses to submit a custom id the API would reject", async () => {
+    const client = new FakeTranslationModelClient();
+    const plan = planFor("ep1", 5, 4);
+    const illegal = plan.map((entry) => ({ ...entry, customId: entry.customId.replace("_", ":") }));
+    await expect(
+      submitEconomyBatch(client, [
+        { context: context("de", { lane: "economy" }), glossary: emptyGlossary(), plan: illegal },
+      ]),
+    ).rejects.toThrow(/custom_id "ep1:0"/);
+  });
+
+  it("refuses to submit two requests that share a custom id", async () => {
+    const client = new FakeTranslationModelClient();
+    const plan = planFor("ep1", 5, 4);
+    await expect(
+      submitEconomyBatch(client, [
+        { context: context("de", { lane: "economy" }), glossary: emptyGlossary(), plan },
+        { context: context("de", { lane: "economy" }), glossary: emptyGlossary(), plan },
+      ]),
+    ).rejects.toThrow(/share the custom_id/);
   });
 
   it("keys results by custom id even though they arrive in any order", async () => {
@@ -379,15 +422,15 @@ describe("the economy lane", () => {
     ]);
     const byId = new Map(plan.map((entry) => [entry.customId, entry]));
     const collected = await collectEconomyBatch(client, batchId, byId, DEFAULT_HARNESS_CONFIG);
-    expect([...collected.keys()].sort()).toEqual(["ep1:0", "ep1:1", "ep1:2"]);
-    expect(collected.get("ep1:0")?.answers).toHaveLength(4);
-    expect(collected.get("ep1:2")?.answers).toHaveLength(2);
+    expect([...collected.keys()].sort()).toEqual(["ep1_0", "ep1_1", "ep1_2"]);
+    expect(collected.get("ep1_0")?.answers).toHaveLength(4);
+    expect(collected.get("ep1_2")?.answers).toHaveLength(2);
   });
 
   it("records errored and expired entries rather than losing them", async () => {
     const base = new FakeTranslationModelClient();
     const client = new FaultInjectingModelClient(base, {
-      batchOutcomes: { "ep1:1": "errored", "ep1:2": "expired" },
+      batchOutcomes: { ep1_1: "errored", ep1_2: "expired" },
     });
     const plan = planFor("ep1", 10, 4);
     const { batchId } = await submitEconomyBatch(client, [
@@ -395,9 +438,9 @@ describe("the economy lane", () => {
     ]);
     const byId = new Map(plan.map((entry) => [entry.customId, entry]));
     const collected = await collectEconomyBatch(client, batchId, byId, DEFAULT_HARNESS_CONFIG);
-    expect(collected.get("ep1:0")?.error).toBeNull();
-    expect(collected.get("ep1:1")?.error).toMatch(/failed inside the Message Batch/);
-    expect(collected.get("ep1:2")?.error).toMatch(/came back expired/);
+    expect(collected.get("ep1_0")?.error).toBeNull();
+    expect(collected.get("ep1_1")?.error).toMatch(/failed inside the Message Batch/);
+    expect(collected.get("ep1_2")?.error).toMatch(/came back expired/);
   });
 
   it("records an entry the batch never mentioned at all", async () => {
@@ -407,9 +450,9 @@ describe("the economy lane", () => {
       { context: context("de", { lane: "economy" }), glossary: emptyGlossary(), plan },
     ]);
     const byId = new Map(plan.map((entry) => [entry.customId, entry]));
-    byId.set("ep1:9", { index: 9, customId: "ep1:9", cues: [{ id: 999, lines: ["Missing."] }] });
+    byId.set("ep1_9", { index: 9, customId: "ep1_9", cues: [{ id: 999, lines: ["Missing."] }] });
     const collected = await collectEconomyBatch(client, batchId, byId, DEFAULT_HARNESS_CONFIG);
-    expect(collected.get("ep1:9")?.error).toMatch(/returned no result/);
+    expect(collected.get("ep1_9")?.error).toMatch(/returned no result/);
   });
 
   it("gives up on a batch that never ends", async () => {

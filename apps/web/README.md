@@ -203,8 +203,20 @@ and to write the reading down. These are all of them.
 
 ## Where the specification is wrong
 
-One thing in the specification is not ambiguous, it is incorrect, and it cost
-money before anyone noticed.
+Two things in the specification are not ambiguous, they are incorrect, and both
+cost money before anyone noticed.
+
+**Section 4.5's `custom_id` of `{jobId}:{batchIndex}` is rejected by the
+Message Batches API.** A `custom_id` must match `^[a-zA-Z0-9_-]{1,64}$`, and a
+colon is not in that set, so the API answers the whole submission with a 400
+naming the first offending request. This is expensive in exactly the way that
+stings: on the economy lane every file's glossary pass has already run and been
+paid for by the time the batch is submitted, so the refusal costs real money and
+produces nothing. Measured on 12 September 2026, on the first economy-lane
+submission this repository ever made. The separator is now an underscore, and
+`submitEconomyBatch` checks every id against the API's own pattern — and for
+duplicates — before the request leaves, so the next id that breaks the rule
+fails locally and for free.
 
 **Section 4.4's glossary pass cannot warm the cache its batches read.** The
 section says the first request for a file "warms the cache that the batches

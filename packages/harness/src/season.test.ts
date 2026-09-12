@@ -236,7 +236,7 @@ describe("the season on the economy lane", () => {
     const jobs = seasonJobs().slice(0, 2);
     const client = new FaultInjectingModelClient(
       new FakeTranslationModelClient({ charactersFromSource }),
-      { batchOutcomes: { "s01e02:1": "errored" } },
+      { batchOutcomes: { s01e02_1: "errored" } },
     );
     const result = await translateUpload({
       client,
