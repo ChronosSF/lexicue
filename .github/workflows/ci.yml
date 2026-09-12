@@ -1,0 +1,74 @@
+name: CI
+
+# Specification section 9.4, minus the two steps that need something deployed.
+# `cdk synth` has no infra/ app to synthesise yet and `cdk diff` against staging
+# needs a stack and an OIDC role in an AWS account that does not exist; both
+# arrive with the CDK work. The dependency audit and secret scanning of 9.4
+# step 5 are not wired here either — the root README says what each still needs.
+#
+# Everything this workflow runs is also what `pnpm lint`, `pnpm typecheck`,
+# `pnpm test:coverage` and `pnpm --filter web build` do on a developer's
+# machine, in the same order, so a red run reproduces locally in one command.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A superseded run wastes a runner and leaves a confusing red cross on a commit
+# that has already been replaced, so the newest run for a ref cancels the older
+# ones. Pull requests and pushes to main group separately, because `github.ref`
+# differs between them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Nothing here writes to the repository and nothing here needs a cloud
+# credential: the only network the jobs touch is the package registry.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint, types, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v7
+
+      # No `version` input on purpose: package.json's `packageManager` field
+      # pins pnpm 10.13.1, and one source of truth for it is what keeps a CI
+      # run and a local run the same. `cache: true` caches the pnpm store,
+      # keyed on the contents of pnpm-lock.yaml.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # --frozen-lockfile fails rather than resolving a new dependency tree, so
+      # a lockfile that no longer matches package.json is a CI failure instead
+      # of a silent difference between two machines.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ESLint with the type-aware rule sets, then Prettier in check mode.
+      - name: Lint and check formatting
+        run: pnpm lint
+
+      # `tsc -b` across the workspace, then the app's own project.
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # The 95% coverage thresholds specification section 10.1 sets on
+      # packages/subtitles and packages/pricing live in vitest.config.ts and
+      # fail the command on their own. This is the run that enforces them.
+      - name: Test with coverage thresholds
+        run: pnpm test:coverage
+
+      - name: Build the web app
+        run: pnpm --filter web build

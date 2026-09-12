@@ -54,7 +54,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 603 tests, in two Vitest projects: the packages and the app
+pnpm test        # 618 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -298,10 +298,10 @@ since been overtaken by Phase 2, and say so.
 - `packages/shared` now exists: the zod schemas of the API contract, plus the
   wallet arithmetic and the same-language refusal that every implementation of
   the contract has to agree on.
-- No GitHub Actions workflows. `pnpm lint`, `pnpm typecheck` and `pnpm test` are
-  the whole of continuous integration's Phase 1 surface and run in seconds; the
-  `cdk diff` and smoke-test jobs of specification section 9.4 need a stack to
-  point at. Conventional commits are used throughout, but release-please is not
+- One GitHub Actions workflow, `.github/workflows/ci.yml`, described under
+  "Continuous integration" below. `deploy.yml`, `evals.yml` and `rollback.yml`
+  from specification section 9.1 do not exist, because all three need an AWS
+  account. Conventional commits are used throughout, but release-please is not
   configured.
 - The economy lane raises `BatchNeverEndedError` when a Message Batch has not
   ended inside the configured window, which is the signal specification section
@@ -384,9 +384,51 @@ whitespace-level normalisations exist around it:
   `evals/README.md` says so at the top, and writing the full-length fixtures is
   the first thing to do before the eval decides anything about price or effort.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and on every push to
+`main`. It is one job on `ubuntu-latest`: check out, install pnpm, install
+Node.js 24, `pnpm install --frozen-lockfile`, then the same four commands
+"Getting started" lists above — `pnpm lint`, `pnpm typecheck`,
+`pnpm test:coverage`, `pnpm --filter web build` — in that order. Keeping the
+workflow a thin wrapper over the package scripts is what makes a red run
+reproducible locally in one command.
+
+Three details are deliberate:
+
+- **The pnpm version comes from `package.json`.** `pnpm/action-setup` is given
+  no `version` input, so it reads the `packageManager` field and CI installs the
+  same pnpm a developer does. `cache: true` caches the pnpm store, keyed on
+  `pnpm-lock.yaml`.
+- **`--frozen-lockfile`** makes a lockfile that no longer matches
+  `package.json` a failure rather than a quietly different dependency tree.
+- **A concurrency group cancels superseded runs**, so pushing twice to a branch
+  leaves one running job and one answer instead of two.
+
+The coverage thresholds of specification section 10.1 are enforced by
+`pnpm test:coverage` itself, in `vitest.config.ts`, so they fail the same way in
+CI and on a laptop.
+
+**What of specification section 9.4 is not here yet**, and what each part needs:
+
+| 9.4 step                    | Status                                                                                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Install, lint, types, tests | Done.                                                                                                                                                                               |
+| Build the SPA               | Done.                                                                                                                                                                               |
+| `cdk synth`                 | No `infra/` app exists to synthesise.                                                                                                                                               |
+| `cdk diff` against staging  | Needs a deployed stack and a read-only OIDC role in an AWS account. There is no account.                                                                                            |
+| Dependency audit            | `pnpm audit --audit-level high` passes on this commit but is not a workflow step: nobody has decided yet whether a newly published advisory should block an unrelated pull request. |
+| Secret scanning             | GitHub's own secret scanning and push protection are repository settings rather than workflow steps, and the founder has to turn them on.                                           |
+
+The founder pushes, so this workflow has never run on GitHub. What has been
+done is to validate it as YAML against the SchemaStore GitHub workflow schema,
+check `actions/checkout@v7`, `actions/setup-node@v7` and `pnpm/action-setup@v6`
+against the current major version of each, and run every one of its steps
+locally on this commit.
+
 ## Test counts and coverage, as measured
 
-603 tests in 33 files, all offline: nothing in the suite touches the network or
+618 tests in 34 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
@@ -394,12 +436,12 @@ deterministic fake model client.
 | -------------------- | ---------: | ---------: | ---------: | ---------: |
 | `packages/subtitles` |     98.33% |     92.55% |       100% |     99.51% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
-| `packages/harness`   |     96.66% |     87.28% |     97.21% |     98.04% |
+| `packages/harness`   |     96.99% |     87.55% |     97.84% |     98.35% |
 | `packages/shared`    |     99.12% |     83.87% |       100% |       100% |
-| `packages/cli`       |     91.06% |     73.85% |       100% |     92.86% |
-| `packages/dev-api`   |     81.87% |     72.11% |     88.74% |     83.85% |
+| `packages/cli`       |     91.62% |     74.24% |       100% |     92.86% |
+| `packages/dev-api`   |     79.93% |     70.85% |     87.58% |     82.11% |
 | `evals`              |     92.86% |     76.60% |     96.67% |     95.11% |
-| **All**              | **92.88%** | **82.94%** | **95.48%** | **94.38%** |
+| **All**              | **92.56%** | **82.81%** | **95.37%** | **94.06%** |
 
 `packages/dev-api` is the lowest, and deliberately so: the parts of it that are
 not covered are the executable entry points (`bin.ts`, `dev.ts`), which start
