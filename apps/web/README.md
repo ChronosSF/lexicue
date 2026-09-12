@@ -129,8 +129,10 @@ The cost is one extra process, which `pnpm dev` starts and stops for you.
 - **No economy lane in real mode.** It is refused before anything is charged,
   with a sentence saying why. It hands the work to the Message Batches API,
   which may take up to 24 hours to come back, and a development server that
-  restarts whenever a file changes is the wrong place to hold that. It has never
-  been run against the real API at all, on either side of the app.
+  restarts whenever a file changes is the wrong place to hold that. The lane
+  itself does work against the real API — it was run from the command line on
+  12 September 2026 and came back in eight minutes, with the numbers in the
+  root `README.md` — but nothing in the app has ever driven it.
 - **No per-file failure isolation on the real backend.** `translateUpload`
   drives a whole upload and raises rather than isolating one bad file, so a
   failure fails the files of that upload that had not finished and refunds each

@@ -9,7 +9,8 @@ corpus and runner. Its exit criterion — a film and a three-episode season
 translating with 100% structural fidelity on both lanes — is met against the
 deterministic fake model, and the fast lane has now been run against the real
 Claude API: see "as measured on 11 September 2026" below, and the three cache
-bugs those runs found. The economy lane has still never touched the real API.
+bugs those runs found. The economy lane has now been run too, on 12 September
+2026, which found a fourth bug before it ran at all.
 
 **Phase 2, in progress** is the web app in `apps/web`. It runs two ways: against
 a local development API that translates with Claude for real, or against a mock
@@ -126,9 +127,10 @@ forced, are in the section after this one.
    pnpm harness translate "evals/corpus/season/*.srt" --to de --lane economy
    ```
 
-   Three episodes, 9 cents of model spend on the fast lane as measured. The
-   economy run submits one Message Batch and then polls for up to 23 hours, so
-   start it and leave it; it has never been run against the real API.
+   Three episodes, 9 cents of model spend on the fast lane as measured, and
+   under 3 cents on the economy lane. The economy run submits one Message Batch
+   and then polls for up to 23 hours, so start it and leave it; the one that has
+   been run came back in eight minutes.
 
 4. **Then the eval.**
 
@@ -277,10 +279,77 @@ The outputs are under `.local/runs/2026-09-11-2200-*`, one directory per arm,
 each with its `report.json`. No judge was run: these are structural, cost and
 consistency measurements plus a reading of the files.
 
-Still unmeasured: every effort level other than `medium`, every language other
-than German and Bulgarian, and the economy lane's cache-hit rate and turnaround.
-The economy lane has never been run against the real API at all, and no LLM
-judge has scored a run on the rubric.
+Still unmeasured: every effort level other than `medium`, and every language
+other than German and Bulgarian. No LLM judge has scored a run on the rubric.
+The economy lane has since been run; the next section is what it measured.
+
+### The economy lane, as measured on 12 September 2026
+
+The first Message Batch this repository has ever submitted. The same three
+Skerry Point episodes as the fast-lane row above, into German, on
+`claude-sonnet-5` at effort `medium`. Outputs and report under
+`.local/runs/2026-09-12-1650-season-de-economy/`.
+
+| Lane, same three files | Cues | Dialogue chars | Tokens in | Tokens out | Cache reads | Cache writes | Model cost | Per 1,000 chars |  Turnaround |
+| ---------------------- | ---: | -------------: | --------: | ---------: | ----------: | -----------: | ---------: | --------------: | ----------: |
+| Fast, 11 September     |   81 |          2,096 |    12,493 |      5,660 |       9,075 |        1,148 |    $0.0863 |         $0.0412 |      49.4 s |
+| Economy, 12 September  |   81 |          2,096 |     9,564 |      2,331 |       2,568 |        2,432 |    $0.0263 |         $0.0126 | 8 min 4 sec |
+
+**It did not run the first time, and the refusal cost money.** Specification
+section 4.5 gives every batch request a `custom_id` of `{jobId}:{batchIndex}`;
+the Message Batches API requires `^[a-zA-Z0-9_-]{1,64}$` and answers the whole
+submission with one 400. By then the season glossary pass and all three file
+glossary passes had run and been paid for — roughly 5 cents — for nothing. The
+separator is now an underscore and every id is checked before the request
+leaves; `apps/web/README.md` records it under "where the specification is
+wrong".
+
+**Turnaround, 8 minutes 4 seconds**, from the command starting to the report
+being written, which includes the four glossary passes as well as the batch.
+The poller asks once a minute, so the batch itself ended somewhere inside the
+last of those minutes. Section 4.5 promises "usually within the hour" and
+section 3.2 a 24-hour ceiling; a three-request batch was well inside both.
+
+**Cache, 2,568 read tokens against 2,432 written: a 51% read share.** Section
+4.5 models this lane at 50% "until measured", and 51% is what came back — but
+the agreement is a coincidence, and the number does not answer the question the
+section is uncertain about. These three files are one batch each, so nothing
+here tests whether a dozen requests _inside one Message Batch_ share a prefix.
+The 51% is the system prompt being written by the first file and read by the
+other two, which is exactly what the fast lane does. Measuring the real
+question needs a multi-batch file on this lane: `drama/the-signal-box.srt` now
+exists for it, and one run of it would cost about 9 cents. **Nobody has run
+that yet**, and until somebody does, section 5.3's economy column rests on an
+assumption.
+
+**Cost, $0.0263 against the fast lane's $0.0863 on the same files — 30%.** Half
+of that saving is certain: the Message Batches API halves every token price and
+`packages/harness/src/cost.ts` applies it. The other half is that this run
+emitted 2,331 output tokens where the fast-lane run emitted 5,660 over the same
+81 cues, with an identical request on both lanes — the harness builds one
+request object and hands it to `messages.parse` or `messages.batches.create`.
+One run cannot say whether Sonnet 5 thinks less inside a batch or whether this
+is ordinary variance in adaptive thinking. Priced at the fast lane's own output
+volume the economy run would have cost about $0.043, which is the 50% the
+Batches API guarantees. **Plan on 50%, not 30%**, until a second run says
+otherwise.
+
+**Structural fidelity, and the text.** All three files re-parsed with every
+index line, timing line and inline tag identical to the source, every cue
+translated, no repairs, no fallback. Against the fast lane's German of the same
+files, 53 of the 81 cues are word-for-word identical and the rest are ordinary
+paraphrase. The three things Haiku 4.5 lost are all held: `Das Licht hat
+Meinungen` is plural in all three episodes, Marta, Ivo and Petar are spelled
+identically throughout, and the episode cards are translated (`FOLGE EINS`)
+rather than left in English. Two differences are differences rather than
+faults — the economy run renders "the tender" as `Versorger` where the fast run
+used `Tender`, and "paraffin" as `Petroleum` rather than `Paraffin`, which for
+a lighthouse lamp is the better of the two readings.
+
+One reporting gap this run exposed: the upload total counts the three file
+reports and not the season glossary pass, so the $0.0263 above is the sum of
+the files and the true spend is a little higher. The same is true of the
+fast-lane figure, so the comparison holds.
 
 ## Handover: what was left out, and what was simplified
 
