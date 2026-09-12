@@ -12,10 +12,14 @@ Claude API: see "as measured on 11 September 2026" below, and the three cache
 bugs those runs found. The economy lane has now been run too, on 12 September
 2026, which found a fourth bug before it ran at all.
 
-**Phase 2, in progress** is the web app in `apps/web`. It runs two ways: against
-a local development API that translates with Claude for real, or against a mock
-backend that runs the whole product in the browser with a fake model. Nothing on
-AWS exists yet.
+**Phase 2, in progress** is the web app in `apps/web`, the authoritative logic
+behind it in `packages/core`, and the CDK app in `infra`. The app runs two ways:
+against a local development API that translates with Claude for real, or against
+a mock backend that runs the whole product in the browser with a fake model.
+**Nothing on AWS exists.** There is no account, so the six stacks of
+specification section 7.2 are synthesised and asserted rather than deployed;
+`infra/README.md` lists what is built, what is stubbed, and what the founder has
+to do first.
 
 ```sh
 pnpm install
@@ -46,6 +50,7 @@ place the specification was ambiguous or wrong.
 | `packages/cli`       | `pnpm harness translate …`                                                                                                                                           |
 | `packages/dev-api`   | An HTTP adapter over `packages/core` on plain `node:http`, with a disk store, so `pnpm dev` can translate for real. Development only; nothing deployed runs it.      |
 | `evals`              | The eval corpus, the hard and advisory metrics, the LLM-judge rubric and the runner.                                                                                 |
+| `infra`              | The CDK app: the six stacks of specification section 7.2 and the Lambda handlers, synthesised and asserted, never deployed.                                          |
 
 ## Where the authority lives
 
@@ -82,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 636 tests, in two Vitest projects: the packages and the app
+pnpm test        # 671 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -606,7 +611,7 @@ CI and on a laptop.
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Install, lint, types, tests | Done.                                                                                                                                                                               |
 | Build the SPA               | Done.                                                                                                                                                                               |
-| `cdk synth`                 | No `infra/` app exists to synthesise.                                                                                                                                               |
+| `cdk synth`                 | Covered, and then some: `pnpm test` synthesises all six stacks of `infra/` for dev, staging and prod and asserts them, which is strictly more than synthesising.                    |
 | `cdk diff` against staging  | Needs a deployed stack and a read-only OIDC role in an AWS account. There is no account.                                                                                            |
 | Dependency audit            | `pnpm audit --audit-level high` passes on this commit but is not a workflow step: nobody has decided yet whether a newly published advisory should block an unrelated pull request. |
 | Secret scanning             | GitHub's own secret scanning and push protection are repository settings rather than workflow steps, and the founder has to turn them on.                                           |
@@ -619,7 +624,7 @@ locally on this commit.
 
 ## Test counts and coverage, as measured
 
-636 tests in 35 files, all offline: nothing in the suite touches the network or
+671 tests in 37 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
@@ -629,15 +634,22 @@ deterministic fake model client.
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
 | `packages/harness`   |     97.02% |     87.64% |     97.85% |     98.37% |
 | `packages/shared`    |     99.12% |     83.87% |       100% |       100% |
-| `packages/core`      |     92.23% |     78.19% |     96.53% |     93.64% |
+| `packages/core`      |     92.44% |     78.60% |     96.53% |     93.89% |
 | `packages/cli`       |     91.62% |     74.24% |       100% |     92.86% |
 | `packages/dev-api`   |     77.74% |     72.83% |     84.75% |     79.64% |
 | `evals`              |     92.86% |     76.60% |     96.67% |     95.11% |
-| **All**              | **93.65%** | **83.63%** | **96.61%** | **94.98%** |
+| `infra`              |     77.62% |     66.18% |     53.06% |     79.27% |
+| **All**              | **92.52%** | **82.33%** | **93.28%** | **93.84%** |
 
-`packages/dev-api` is the lowest, and deliberately so: the parts of it that are
-not covered are the executable entry points (`bin.ts`, `dev.ts`), which start
-processes, and the error paths that only a real model outage reaches.
+`packages/dev-api` and `infra` are the lowest, and deliberately so. What is
+uncovered in `dev-api` is its executable entry points (`bin.ts`, `dev.ts`),
+which start processes, and the error paths that only a real model outage
+reaches. What is uncovered in `infra` is every Lambda `handler` export and both
+AWS store adapters, because those are the parts that need an AWS account and
+therefore fail closed on purpose — the logic behind them, `routeRequest` and
+`consume`, is tested. That is also why its function coverage is the lowest
+number in the table: the uncovered functions are almost all one-line stubs that
+throw.
 
 Specification section 10.1 sets a 95% target on `packages/subtitles` and
 `packages/pricing`; both are past it and the threshold is enforced by

@@ -1,10 +1,12 @@
 name: CI
 
-# Specification section 9.4, minus the two steps that need something deployed.
-# `cdk synth` has no infra/ app to synthesise yet and `cdk diff` against staging
-# needs a stack and an OIDC role in an AWS account that does not exist; both
-# arrive with the CDK work. The dependency audit and secret scanning of 9.4
-# step 5 are not wired here either — the root README says what each still needs.
+# Specification section 9.4, minus what needs something deployed.
+#
+# `cdk synth` is covered: `pnpm test` synthesises all six stacks of infra/ for
+# all three environments and asserts them, which is strictly more than synth.
+# `cdk diff` against staging still needs a deployed stack and an OIDC role in an
+# AWS account that does not exist. The dependency audit and secret scanning of
+# 9.4 step 5 are not wired here — the root README says what each still needs.
 #
 # Everything this workflow runs is also what `pnpm lint`, `pnpm typecheck`,
 # `pnpm test:coverage` and `pnpm --filter web build` do on a developer's
