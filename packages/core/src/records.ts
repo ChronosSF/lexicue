@@ -147,6 +147,28 @@ export interface CheckoutRecord {
 }
 
 /**
+ * A Stripe event this account has already acted on: the idempotency marker of
+ * specification section 6.6, so a redelivered event cannot credit twice.
+ *
+ * Section 7.4 puts it in its own partition, `STRIPE#{eventId}`. It is in the
+ * user's partition here, as `STRIPE#{eventId}` under `USER#{sub}`, for one
+ * reason: the marker and the credit have to be the same write, and this store's
+ * unit of work is one partition. DynamoDB's `TransactWriteItems` can span
+ * partitions, so 7.4's layout would also work — but co-locating them means the
+ * marker cannot be orphaned from the money it guards, and the 90-day expiry the
+ * section asks for still applies.
+ */
+export interface StripeEventRecord {
+  eventId: string;
+  type: string;
+  amountCents: number;
+  processedAt: number;
+}
+
+/** Stripe event markers expire after 90 days (spec section 7.4). */
+export const STRIPE_MARKER_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+/**
  * Everything in one user's partition. In DynamoDB this is the result of a
  * single `Query` on `PK = USER#{sub}`, sorted into its kinds.
  */
@@ -157,6 +179,7 @@ export interface AccountData {
   jobs: JobRecord[];
   ledger: LedgerEntry[];
   checkouts: CheckoutRecord[];
+  stripeEvents: StripeEventRecord[];
 }
 
 /**
@@ -203,6 +226,7 @@ export function emptyAccount(): AccountData {
     jobs: [],
     ledger: [],
     checkouts: [],
+    stripeEvents: [],
   };
 }
 

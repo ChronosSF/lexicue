@@ -1,10 +1,18 @@
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { ApiService, emptyAccount, type PlannedBatch } from "@lexicue/core";
+import {
+  ApiService,
+  HttpStripeClient,
+  emptyAccount,
+  parseStripeEvent,
+  verifyStripeSignature,
+  type PlannedBatch,
+} from "@lexicue/core";
 import type { HarnessConfig, TranslationModelClient } from "@lexicue/harness";
 import { ApiError, STATUS_FOR_ERROR, newId } from "@lexicue/shared";
 import { MAX_FILE_BYTES, REJECTION_MESSAGES } from "@lexicue/subtitles";
 import { zipSync } from "fflate";
+import { missingStripeMessage, resolveStripe } from "./env.js";
 import { DownloadLinks } from "./links.js";
 import { DevStore, type DevSnapshot } from "./store.js";
 
@@ -37,6 +45,8 @@ export interface DevApiOptions {
   now?: () => number;
   /** Set false in tests that want to assert on a finished batch synchronously. */
   runInBackground?: boolean;
+  /** Overrides what is read from `.env`, so a test can supply a secret. */
+  stripe?: { secretKey: string | null; webhookSecret: string | null };
 }
 
 export interface DevApi {
@@ -63,6 +73,8 @@ export function createDevApi(options: DevApiOptions): DevApi {
   const clock = options.now ?? ((): number => Date.now());
   const links = new DownloadLinks(randomBytes(32));
   const batchSize = options.config?.batchSize ?? 120;
+  // Presence only: neither secret is printed, logged or returned anywhere.
+  const stripeConfig = options.stripe ?? resolveStripe(process.env);
   const service = new ApiService({
     metadata: store.metadata,
     files: store.files,
@@ -73,6 +85,9 @@ export function createDevApi(options: DevApiOptions): DevApi {
     shouldFail: (fileName) => FAILURE_FILE_PATTERN.test(fileName),
     // This server translates in its own process, starting before it answers.
     startsImmediately: true,
+    ...(stripeConfig.secretKey === null
+      ? {}
+      : { stripe: new HttpStripeClient(stripeConfig.secretKey) }),
   });
   const runInBackground = options.runInBackground ?? true;
   let pending: Promise<void> = Promise.resolve();
@@ -188,6 +203,10 @@ export function createDevApi(options: DevApiOptions): DevApi {
           (sessionId, amountCents) => `#/checkout/${sessionId}/${amountCents.toString()}`,
         ),
       );
+      return;
+    }
+    if (method === "POST" && path === "/api/billing/webhook") {
+      await stripeWebhook(request, response, now);
       return;
     }
     if (method === "POST" && checkoutId !== null) {
@@ -324,6 +343,70 @@ export function createDevApi(options: DevApiOptions): DevApi {
       if (!runInBackground) await running;
     }
     json(response, 202, started.response);
+  }
+
+  // ----------------------------------------------------------------- billing
+
+  /**
+   * `POST /api/billing/webhook` (spec sections 6.6 and 7.3).
+   *
+   * The only route with no `Authorization` header: Stripe authenticates with a
+   * signature over the raw request body, which is why the bytes are read
+   * before anything parses them. Verification, then parse, then the core's
+   * idempotent apply — in that order, because a handler that parsed first
+   * would be verifying a body it re-serialised.
+   *
+   * **Nothing has exercised this against Stripe.** Without both secrets it
+   * refuses and says which to set; with them it has never been run, because
+   * this repository has no Stripe account.
+   */
+  async function stripeWebhook(
+    request: IncomingMessage,
+    response: ServerResponse,
+    now: number,
+  ): Promise<void> {
+    const secret = stripeConfig.webhookSecret;
+    if (secret === null) {
+      throw new ApiError({ code: "bad-request", message: missingStripeMessage() });
+    }
+    const raw = (await readBody(request, 1024 * 1024)).toString("utf8");
+    const signature = request.headers["stripe-signature"];
+    try {
+      await verifyStripeSignature(
+        raw,
+        typeof signature === "string" ? signature : undefined,
+        secret,
+        now,
+      );
+    } catch (error) {
+      process.stderr.write(`[dev-api] ${String(error)}\n`);
+      // Section 11.1 alarms on any signature failure; a 400 is what makes
+      // Stripe stop retrying a request it can never get right.
+      throw new ApiError({
+        code: "bad-request",
+        message: "That webhook signature did not verify. Nothing was credited.",
+      });
+    }
+
+    const event = parseStripeEvent(raw);
+    // An event type nobody subscribed to is a 200 and no work: a 400 would
+    // make Stripe retry it for three days.
+    if (event === null) {
+      json(response, 200, { received: true, applied: false });
+      return;
+    }
+
+    const data = await service.load();
+    if (data.account.user?.userId !== event.userId) {
+      // One account per development database, so an event for anybody else is
+      // somebody's test webhook pointed at the wrong machine.
+      throw new ApiError({
+        code: "not-found",
+        message: "That event is for an account this server does not have.",
+      });
+    }
+    const applied = await service.applyStripeEvent(event, now);
+    json(response, 200, { received: true, ...applied });
   }
 
   // --------------------------------------------------------------- downloads

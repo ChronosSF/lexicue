@@ -168,6 +168,9 @@ function label(reason: LedgerEntry["reason"]): string {
       return "Translation";
     case "refund":
       return "Refund";
+    case "reversal":
+      // A refund issued in Stripe, which takes balance away (spec 6.6).
+      return "Payment reversed";
   }
 }
 
@@ -181,6 +184,8 @@ function chipFor(reason: LedgerEntry["reason"]): string {
       return "";
     case "refund":
       return "chip-ok";
+    case "reversal":
+      return "chip-warn";
   }
 }
 

@@ -149,6 +149,31 @@ export function applyRefund(
   });
 }
 
+/**
+ * A refund issued in the Stripe dashboard, which removes unspent balance
+ * (spec section 6.6).
+ *
+ * Two rules, and both matter. The balance never goes below zero, so a user who
+ * has already spent the money keeps what they bought and the shortfall is a
+ * dispute rather than a negative wallet. And the free grant is never touched:
+ * it was not paid for, so a card refund cannot claw it back.
+ */
+export function applyReversal(
+  state: WalletState,
+  input: { amountCents: number; ref: string; description: string; now: number },
+): LedgerEntry {
+  const removed = Math.min(input.amountCents, Math.max(0, state.balanceCents - state.freeCents));
+  state.balanceCents -= removed;
+  return record(state, {
+    reason: "reversal",
+    deltaCents: -removed,
+    freeDeltaCents: 0,
+    ref: input.ref,
+    description: input.description,
+    now: input.now,
+  });
+}
+
 /** The 402 of spec section 7.3, written as the sentence the user reads. */
 export function insufficientBalance(
   totalCents: number,

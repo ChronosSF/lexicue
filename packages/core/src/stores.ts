@@ -45,6 +45,9 @@ export interface AccountChanges {
   /** Retention only: the ledger is append-only apart from expiry. */
   replaceLedger?: readonly AccountData["ledger"][number][];
   putCheckouts?: readonly AccountData["checkouts"][number][];
+  /** The idempotency markers of section 6.6, written with the credit. */
+  putStripeEvents?: readonly AccountData["stripeEvents"][number][];
+  replaceStripeEvents?: readonly AccountData["stripeEvents"][number][];
   /**
    * The condition of section 7.4's charging transaction: refuse the whole
    * commit unless the stored balance is still at least this many cents. In

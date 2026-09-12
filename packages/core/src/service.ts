@@ -18,7 +18,9 @@ import {
   TopUpRequestSchema,
   applyCharge,
   applyGrant,
+  applyReversal,
   applyTopUp,
+  ledgerBalance,
   type BatchListResponse,
   type BatchResponse,
   type CreateBatchResponse,
@@ -36,6 +38,7 @@ import {
   REJECTION_MESSAGES,
 } from "@lexicue/subtitles";
 import {
+  STRIPE_MARKER_RETENTION_MS,
   dayStamp,
   emptyAccount,
   jobsOfBatch,
@@ -70,6 +73,7 @@ import type {
   MetadataStore,
 } from "./stores.js";
 import { validateRequest } from "./validation.js";
+import type { StripeClient, StripeEvent } from "./billing.js";
 import { applyChanges } from "./memory.js";
 
 /**
@@ -103,6 +107,8 @@ export interface ApiServiceOptions {
   refuseEconomy?: string;
   /** A file the caller wants to fail on purpose, for the demo's refund row. */
   shouldFail?: (fileName: string) => boolean;
+  /** Stripe, when there is a key for it. Absent, top-ups use a stand-in URL. */
+  stripe?: StripeClient;
   /**
    * Whether the caller starts translating in the same breath as creating the
    * batch. A queue-backed worker does not: the rows say `queued` until a
@@ -129,6 +135,7 @@ export class ApiService {
   private readonly refuseEconomy: string | null;
   private readonly shouldFail: (fileName: string) => boolean;
   private readonly startsImmediately: boolean;
+  private readonly stripe: StripeClient | null;
 
   constructor(options: ApiServiceOptions) {
     this.metadata = options.metadata;
@@ -139,6 +146,7 @@ export class ApiService {
     this.refuseEconomy = options.refuseEconomy ?? null;
     this.shouldFail = options.shouldFail ?? ((): boolean => false);
     this.startsImmediately = options.startsImmediately ?? false;
+    this.stripe = options.stripe ?? null;
   }
 
   // ------------------------------------------------------------------- state
@@ -462,12 +470,22 @@ export class ApiService {
 
   // ----------------------------------------------------------------- billing
 
+  /**
+   * `POST /api/billing/topup`.
+   *
+   * With a Stripe client configured, this creates a real Checkout Session and
+   * returns Stripe's hosted URL — card details never touch this code (section
+   * 6.3). Without one, `checkoutUrlFor` supplies a stand-in, which is what the
+   * local development API uses because there is no Stripe account.
+   */
   async topUp(
     body: unknown,
     now: number,
     checkoutUrlFor: (sessionId: string, amountCents: number) => string,
+    urls?: { successUrl: string; cancelUrl: string },
   ): Promise<TopUpResponse> {
     const data = await this.loadPruned(now);
+    const user = requireUser(data.account);
     requireVerified(data.account);
     const request = validateRequest(TopUpRequestSchema, body);
     if (!(TOP_UP_AMOUNTS_CENTS as readonly number[]).includes(request.amountCents)) {
@@ -476,6 +494,32 @@ export class ApiService {
         message: `Top-ups are ${TOP_UP_AMOUNTS_CENTS.map(formatCents).join(", ")}.`,
       });
     }
+
+    if (this.stripe !== null && urls !== undefined) {
+      const session = await this.stripe.createCheckoutSession({
+        userId: user.userId,
+        amountCents: request.amountCents,
+        successUrl: urls.successUrl,
+        cancelUrl: urls.cancelUrl,
+      });
+      await this.metadata.commit({
+        putCheckouts: [
+          {
+            sessionId: session.id,
+            amountCents: request.amountCents,
+            status: "open",
+            createdAt: now,
+            credited: false,
+          },
+        ],
+      });
+      return {
+        checkoutUrl: session.url,
+        sessionId: session.id,
+        amountCents: request.amountCents,
+      };
+    }
+
     const sessionId = this.environment.newId("cs");
     await this.metadata.commit({
       putCheckouts: [
@@ -496,9 +540,116 @@ export class ApiService {
   }
 
   /**
+   * A verified Stripe event, applied once and only once (section 6.6).
+   *
+   * The marker is written in the same commit as the credit, so there is no
+   * window in which the money moved and the marker did not. A redelivered
+   * event — Stripe retries for three days — finds the marker and changes
+   * nothing, which is what makes replaying from the dashboard safe.
+   *
+   * Verification is the caller's job, and has to be: the signature covers the
+   * raw bytes of the request, which only the transport has. Adapters call
+   * `verifyStripeSignature` and then `parseStripeEvent`, in that order.
+   */
+  async applyStripeEvent(
+    event: StripeEvent,
+    now: number,
+  ): Promise<{ balanceCents: number; applied: boolean }> {
+    const data = await this.load();
+    if (data.stripeEvents.some((marker) => marker.eventId === event.id)) {
+      return { balanceCents: data.account.balanceCents, applied: false };
+    }
+
+    const marker = {
+      eventId: event.id,
+      type: event.type,
+      amountCents: event.amountCents,
+      processedAt: now,
+    };
+
+    if (event.type === "checkout.session.completed") {
+      applyTopUp(walletView(data), {
+        amountCents: event.amountCents,
+        ref: event.sessionId ?? event.id,
+        now,
+      });
+      const checkout = data.checkouts.find((row) => row.sessionId === event.sessionId);
+      await this.metadata.commit({
+        account: data.account,
+        replaceLedger: data.ledger,
+        putStripeEvents: [marker],
+        ...(checkout === undefined
+          ? {}
+          : { putCheckouts: [{ ...checkout, status: "paid" as const, credited: true }] }),
+      });
+      return { balanceCents: data.account.balanceCents, applied: true };
+    }
+
+    // `charge.refunded`: section 6.6 removes the corresponding unspent balance.
+    // `applyReversal` is what keeps that honest — it never goes below zero and
+    // never touches the free grant, which was not paid for.
+    applyReversal(walletView(data), {
+      amountCents: event.amountCents,
+      ref: event.sessionId ?? event.id,
+      description: `Card payment of ${formatCents(event.amountCents)} was refunded`,
+      now,
+    });
+    await this.metadata.commit({
+      account: data.account,
+      replaceLedger: data.ledger,
+      putStripeEvents: [marker],
+    });
+    return { balanceCents: data.account.balanceCents, applied: true };
+  }
+
+  /**
+   * The nightly reconciliation of specification section 8.
+   *
+   * Two questions. Does every balance equal the sum of its ledger — the
+   * invariant that catches a write which bypassed a transaction? And did every
+   * completed Stripe session reach the ledger — the one that catches a webhook
+   * that never arrived, which section 11.2's runbook resolves by replaying from
+   * the dashboard. Both are read-only: reconciliation reports, it does not
+   * repair, because a repair that guesses is how a ledger stops being the truth.
+   */
+  async reconcile(
+    now: number,
+    stripe?: StripeClient,
+  ): Promise<{
+    balanceCents: number;
+    ledgerCents: number;
+    balanced: boolean;
+    missingCredits: string[];
+  }> {
+    const data = await this.load();
+    const ledgerCents = ledgerBalance(walletView(data));
+    const missingCredits: string[] = [];
+
+    if (stripe !== undefined) {
+      const since = Math.floor((now - STRIPE_MARKER_RETENTION_MS) / 1000);
+      for (const event of await stripe.listEvents(since)) {
+        if (event.type !== "checkout.session.completed") continue;
+        if (data.stripeEvents.some((marker) => marker.eventId === event.id)) continue;
+        missingCredits.push(event.id);
+      }
+    }
+
+    return {
+      balanceCents: data.account.balanceCents,
+      ledgerCents,
+      balanced: data.account.balanceCents === ledgerCents,
+      missingCredits,
+    };
+  }
+
+  /**
    * What Stripe's `checkout.session.completed` webhook does (section 6.6). The
    * `credited` flag is the idempotency marker: a redelivered event finds it set
    * and credits nothing, which is the conditional put the section asks for.
+   *
+   * This is the local stand-in, reached from `/api/dev/checkout/{id}` because
+   * there is no Stripe to send a webhook. {@link applyStripeEvent} is the real
+   * path.
    */
   async creditCheckout(sessionId: string, now: number): Promise<{ balanceCents: number }> {
     const data = await this.load();

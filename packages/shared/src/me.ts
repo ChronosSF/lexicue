@@ -12,8 +12,16 @@ import { CentsSchema, DeltaCentsSchema, IdSchema, InstantSchema } from "./common
 export const MAX_FILES_PER_DAY = 100;
 export const CONCURRENT_FAST_FILES = 3;
 
-/** Why the balance moved (spec section 7.4). */
-export const LedgerReasonSchema = z.enum(["topup", "grant", "charge", "refund"]);
+/**
+ * Why the balance moved (spec section 7.4).
+ *
+ * `reversal` is not in the section's list of four and is needed by section 6.6:
+ * a refund issued in the Stripe dashboard arrives as `charge.refunded` and
+ * takes unspent balance *away*. Recording that as a `refund` would put
+ * "Refund −$5.00" in a money list, where `refund` means the opposite — a failed
+ * file giving money back — so it gets its own reason and its own word.
+ */
+export const LedgerReasonSchema = z.enum(["topup", "grant", "charge", "refund", "reversal"]);
 
 export const LedgerEntrySchema = z.object({
   id: IdSchema,

@@ -87,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 671 tests, in two Vitest projects: the packages and the app
+pnpm test        # 691 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -580,6 +580,69 @@ whitespace-level normalisations exist around it:
   written so a recurring line falls in every batch. What is still short is
   breadth, and a file at the 2,600-cue end. `evals/README.md` has the detail.
 
+## Stripe, and what has not been exercised
+
+Specification section 6.6's flow is written and tested as far as a repository
+with no Stripe account can be: `packages/core/src/billing.ts`, with 15 tests in
+`billing.test.ts` and five more over real HTTP in `packages/dev-api`.
+
+**Nothing here has ever talked to Stripe.** `.env` carries the model key and
+nothing else, so the top-up route falls back to the local checkout screen and
+`POST /api/billing/webhook` refuses with a sentence naming what to set. The
+split is deliberate:
+
+| Part                                            | State                                                                                     |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Webhook signature verification                  | **Written out and tested properly.** No key is needed: a test signs a body itself.        |
+| Idempotent credit, keyed on the Stripe event id | **Tested.** A redelivered event credits nothing, which is the whole point of the marker.  |
+| `charge.refunded` taking unspent balance back   | **Tested.** Never below zero, never out of the free grant.                                |
+| Reconciliation                                  | **Tested** against a fake Stripe: the ledger invariant, and sessions that never credited. |
+| Creating a Checkout Session                     | **Never run.** `HttpStripeClient` names the endpoint and the parameters and nothing more. |
+| The Stripe CLI forwarding real webhooks         | **Never run.**                                                                            |
+
+The signature is written out rather than imported on purpose. There is no
+`stripe` package here: this product uses three calls of that API, the SDK's
+value is the breadth it wraps, and a megabyte of unexercised dependency would
+not have made the untested part any less untested. What it would have done is
+hide the one piece worth reading — `HMAC-SHA256` over `{timestamp}.{body}`,
+compared in constant time against the `v1` values in the header, inside a
+five-minute tolerance — behind a function call. The raw body matters: a handler
+that parses JSON first and re-serialises it fails every time, and one that
+verifies the re-serialised body would accept a forgery. There is a test for
+exactly that.
+
+**What the founder has to do to exercise it**, all in test mode:
+
+1. In the Stripe dashboard, in **test mode**, copy the secret key
+   (`sk_test_…`) into `STRIPE_SECRET_KEY` in `.env`.
+2. Install the Stripe CLI and forward webhooks to the local API:
+
+   ```sh
+   stripe login
+   stripe listen --forward-to localhost:5174/api/billing/webhook
+   ```
+
+   It prints a signing secret (`whsec_…`); put that in
+   `STRIPE_WEBHOOK_SECRET` in `.env` and restart `pnpm dev`.
+
+3. Click a top-up in the app. It will now open Stripe's hosted page instead of
+   the local checkout screen; pay with `4242 4242 4242 4242`. The balance
+   should move when the forwarded webhook lands.
+4. Then try the two things only a real Stripe can show:
+   `stripe events resend <event-id>` must credit nothing the second time, and a
+   refund issued in the dashboard must take the unspent balance back and leave
+   the $2.50 grant alone.
+
+**Expect to find something wrong in step 3 or 4.** The Checkout Session call is
+the one part of this that nobody has run.
+
+One thing the specification does not have and this needed: a fifth ledger
+reason. Section 7.4 lists `topup`, `grant`, `charge` and `refund`, and section
+6.6 requires taking balance _back_ when a card payment is refunded. Recording
+that as a `refund` would put "Refund −$5.00" in a money list where `refund`
+means the opposite, so there is now a `reversal` reason and the wallet screen
+calls it "Payment reversed".
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every pull request and on every push to
@@ -624,7 +687,7 @@ locally on this commit.
 
 ## Test counts and coverage, as measured
 
-671 tests in 37 files, all offline: nothing in the suite touches the network or
+691 tests in 38 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
@@ -633,13 +696,13 @@ deterministic fake model client.
 | `packages/subtitles` |     98.33% |     92.55% |       100% |     99.51% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
 | `packages/harness`   |     97.02% |     87.64% |     97.85% |     98.37% |
-| `packages/shared`    |     99.12% |     83.87% |       100% |       100% |
-| `packages/core`      |     92.44% |     78.60% |     96.53% |     93.89% |
+| `packages/shared`    |     99.14% |     83.87% |       100% |       100% |
+| `packages/core`      |     90.08% |     76.44% |     92.98% |     91.77% |
 | `packages/cli`       |     91.62% |     74.24% |       100% |     92.86% |
-| `packages/dev-api`   |     77.74% |     72.83% |     84.75% |     79.64% |
+| `packages/dev-api`   |     79.46% |     73.47% |     85.71% |     81.29% |
 | `evals`              |     92.86% |     76.60% |     96.67% |     95.11% |
 | `infra`              |     77.62% |     66.18% |     53.06% |     79.27% |
-| **All**              | **92.52%** | **82.33%** | **93.28%** | **93.84%** |
+| **All**              | **92.08%** | **81.67%** | **92.55%** | **93.46%** |
 
 `packages/dev-api` and `infra` are the lowest, and deliberately so. What is
 uncovered in `dev-api` is its executable entry points (`bin.ts`, `dev.ts`),

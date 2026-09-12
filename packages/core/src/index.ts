@@ -11,6 +11,7 @@
 export {
   FILE_RETENTION_MS,
   HISTORY_RETENTION_MS,
+  STRIPE_MARKER_RETENTION_MS,
   dayStamp,
   emptyAccount,
   jobsOfBatch,
@@ -22,6 +23,7 @@ export {
   type BatchRecord,
   type CheckoutRecord,
   type JobRecord,
+  type StripeEventRecord,
   type UploadRecord,
   type UserRecord,
 } from "./records.js";
@@ -72,6 +74,21 @@ export {
   uniqueZipEntryName,
   zipFileName,
 } from "./views.js";
+
+export {
+  FakeStripeClient,
+  HttpStripeClient,
+  SIGNATURE_TOLERANCE_SECONDS,
+  StripeSignatureError,
+  parseStripeEvent,
+  signStripePayload,
+  verifyStripeSignature,
+  type CreateCheckoutSessionInput,
+  type StripeCheckoutSession,
+  type StripeClient,
+  type StripeEvent,
+  type StripeEventType,
+} from "./billing.js";
 
 export { validateRequest } from "./validation.js";
 

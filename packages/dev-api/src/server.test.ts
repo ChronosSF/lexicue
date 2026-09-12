@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { signStripePayload } from "@lexicue/core";
 import { FakeTranslationModelClient } from "@lexicue/harness";
 import { FREE_BALANCE_CENTS, priceCents } from "@lexicue/pricing";
 import { ledgerBalance, type ApiErrorBody, type Batch, type MeResponse } from "@lexicue/shared";
@@ -67,12 +68,19 @@ afterEach(() => {
   }
 });
 
-async function start(options: { verified?: boolean; background?: boolean } = {}): Promise<Harness> {
+async function start(
+  options: {
+    verified?: boolean;
+    background?: boolean;
+    stripe?: { secretKey: string | null; webhookSecret: string | null };
+  } = {},
+): Promise<Harness> {
   const dir = mkdtempSync(join(tmpdir(), "lexicue-dev-api-"));
   const api = createDevApi({
     client: new FakeTranslationModelClient(),
     stateDir: dir,
     runInBackground: options.background ?? false,
+    ...(options.stripe === undefined ? {} : { stripe: options.stripe }),
   });
   // An explicit IPv4 loopback so the port the test connects to is the port the
   // server bound; `pnpm dev` uses the default, "localhost".
@@ -504,5 +512,112 @@ describe("download links", () => {
 
     const tampered = (job?.downloadUrl ?? "").replace(/signature=[0-9a-f]+/, "signature=beef");
     expect((await fetch(`${harness.base}${tampered}`)).status).toBe(404);
+  });
+});
+
+/**
+ * `POST /api/billing/webhook`, the only route Stripe reaches and the only one
+ * with no `Authorization` header: it authenticates with a signature over the
+ * raw request body.
+ *
+ * **Nothing here has been exercised against Stripe.** There is no account and
+ * no key in `.env`, so the secret below is made up and the event bodies are
+ * built by `FakeStripeClient`. What that does prove is the part that has to be
+ * right whatever Stripe sends: an unsigned body is refused, a tampered one is
+ * refused, and a redelivered event credits nothing.
+ */
+describe("the Stripe webhook", () => {
+  const SECRET = "whsec_test_only_never_real";
+
+  async function stripeHarness(): Promise<Harness> {
+    return start({ stripe: { secretKey: null, webhookSecret: SECRET } });
+  }
+
+  async function post(harness: Harness, body: string, signature?: string): Promise<Response> {
+    return fetch(`${harness.base}/api/billing/webhook`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(signature === undefined ? {} : { "stripe-signature": signature }),
+      },
+      body,
+    });
+  }
+
+  /** The event a completed hosted Checkout Session produces (spec 6.6). */
+  function completedBody(userId: string, eventId: string, amountCents: number): string {
+    return JSON.stringify({
+      id: eventId,
+      type: "checkout.session.completed",
+      created: Math.floor(Date.now() / 1000),
+      data: {
+        object: {
+          id: "cs_test_1",
+          client_reference_id: userId,
+          amount_total: amountCents,
+          metadata: { userId },
+        },
+      },
+    });
+  }
+
+  it("refuses a body with no signature, and one whose signature is wrong", async () => {
+    const harness = await stripeHarness();
+    const userId = ((await (await harness.call("/api/me")).json()) as MeResponse).user.userId;
+    const body = completedBody(userId, "evt_unsigned", 500);
+
+    expect((await post(harness, body)).status).toBe(400);
+    expect((await post(harness, body, "t=1,v1=deadbeef")).status).toBe(400);
+    // Nothing was credited by either.
+    expect(harness.api.store.current().balanceCents).toBe(FREE_BALANCE_CENTS);
+  });
+
+  it("refuses a body that changed after it was signed", async () => {
+    const harness = await stripeHarness();
+    const userId = ((await (await harness.call("/api/me")).json()) as MeResponse).user.userId;
+    const body = completedBody(userId, "evt_tampered", 500);
+    const signature = await signStripePayload(body, SECRET, Date.now() / 1000);
+
+    const response = await post(harness, body.replace("500", "50000"), signature);
+    expect(response.status).toBe(400);
+    expect(harness.api.store.current().balanceCents).toBe(FREE_BALANCE_CENTS);
+  });
+
+  it("credits a verified event once, however many times it arrives", async () => {
+    const harness = await stripeHarness();
+    const userId = ((await (await harness.call("/api/me")).json()) as MeResponse).user.userId;
+    const body = completedBody(userId, "evt_good", 1000);
+    const signature = await signStripePayload(body, SECRET, Date.now() / 1000);
+
+    const first = await post(harness, body, signature);
+    expect(first.status).toBe(200);
+    expect((await first.json()) as { applied: boolean }).toMatchObject({ applied: true });
+
+    // Stripe retries for three days; the marker is what makes that safe.
+    const second = await post(harness, body, signature);
+    expect((await second.json()) as { applied: boolean }).toMatchObject({ applied: false });
+
+    const state = harness.api.store.current();
+    expect(state.balanceCents).toBe(FREE_BALANCE_CENTS + 1000);
+    expect(ledgerBalance({ ...state, ledger: state.ledger })).toBe(state.balanceCents);
+    expect(state.ledger.filter((entry) => entry.reason === "topup")).toHaveLength(1);
+  });
+
+  it("accepts and ignores an event type nobody subscribed to", async () => {
+    const harness = await stripeHarness();
+    const body = JSON.stringify({ id: "evt_other", type: "invoice.paid", data: { object: {} } });
+    const signature = await signStripePayload(body, SECRET, Date.now() / 1000);
+    const response = await post(harness, body, signature);
+    // A 400 here would make Stripe retry it for three days.
+    expect(response.status).toBe(200);
+    expect((await response.json()) as { applied: boolean }).toMatchObject({ applied: false });
+  });
+
+  it("says what to set when Stripe is not configured at all", async () => {
+    const harness = await start();
+    const response = await post(harness, "{}", "t=1,v1=x");
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: ApiErrorBody };
+    expect(body.error.message).toContain("STRIPE_WEBHOOK_SECRET");
   });
 });

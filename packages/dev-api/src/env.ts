@@ -37,6 +37,45 @@ export function resolveApiKey(
   };
 }
 
+/**
+ * Stripe, if there is anything to be Stripe with (spec section 6.6).
+ *
+ * Both values are read from the same `.env` as the model key, and **neither is
+ * ever printed, logged or returned** — only whether it is there. Absent, the
+ * billing webhook route refuses with a sentence naming what to set, which is
+ * the honest state of this repository: there is no Stripe account and nothing
+ * in `packages/core/src/billing.ts` has ever talked to one.
+ */
+export interface ResolvedStripe {
+  secretKey: string | null;
+  webhookSecret: string | null;
+  /** True when both are set, which is the only configuration that works. */
+  configured: boolean;
+}
+
+export function resolveStripe(
+  env: Record<string, string | undefined>,
+  path: string = envFilePath(),
+): ResolvedStripe {
+  loadEnvFile(path, env);
+  const value = (name: string): string | null => {
+    const raw = env[name];
+    return raw === undefined || raw.trim() === "" ? null : raw;
+  };
+  const secretKey = value("STRIPE_SECRET_KEY");
+  const webhookSecret = value("STRIPE_WEBHOOK_SECRET");
+  return { secretKey, webhookSecret, configured: secretKey !== null && webhookSecret !== null };
+}
+
+/** What the webhook route answers when there is no Stripe to verify against. */
+export function missingStripeMessage(): string {
+  return [
+    "Stripe is not configured, so this webhook cannot be verified and nothing was credited.",
+    "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in .env at the repository root",
+    "and restart the API. Both must be test-mode values.",
+  ].join(" ");
+}
+
 /** What `pnpm dev` prints instead of quietly falling back to the mock. */
 export function missingKeyMessage(): string {
   return [

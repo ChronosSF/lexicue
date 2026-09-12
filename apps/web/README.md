@@ -117,9 +117,14 @@ The cost is one extra process, which `pnpm dev` starts and stops for you.
 
 **Simulated, and said so in the app:**
 
-- **Money.** There is no card and no Stripe. Choosing a top-up amount credits
-  the balance. The header says "Local · real translation, simulated money" and
-  the wallet screen says it in a sentence.
+- **Money.** There is no card and no Stripe account, so choosing a top-up
+  amount credits the balance through the local checkout screen. The header says
+  "Local · real translation, simulated money" and the wallet screen says it in a
+  sentence. The Stripe flow of specification section 6.6 _is_ written and
+  tested against a fake Stripe (`packages/core/src/billing.ts`), and putting
+  `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in `.env` switches the top-up
+  to Stripe's hosted page and turns the webhook route on — see the root README,
+  which also says which parts of that have never been run.
 - **Sign-in.** There is no Cognito and no password. `POST /api/dev/session`
   returns a token shaped like a JWT so the browser reads its claims exactly as
   it will read Cognito's, and verification is a button rather than an email.
@@ -145,7 +150,9 @@ The cost is one extra process, which `pnpm dev` starts and stops for you.
   three on the fast lane, but the harness translates a multi-file upload in
   order on purpose: that ordering is what lets a character introduced in episode
   two reach episode three. The notice above the file rows says so.
-- **No Stripe, no Cognito, no email, no AWS.**
+- **No Cognito, no email, no deployed AWS.** Stripe is the exception and only
+  half an exception: the code and its tests exist, the keys do not, and nothing
+  has ever been exercised against Stripe itself.
 - **No economy-lane overdue path.** A Message Batch that ran past 24 hours would
   be refunded and re-run on the fast lane (section 2.3); nothing here simulates
   a day of waiting.

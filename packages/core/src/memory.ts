@@ -37,6 +37,16 @@ export function applyChanges(data: AccountData, changes: AccountChanges): void {
   data.jobs = merge(data.jobs, changes.putJobs, changes.deleteJobIds, (j) => j.jobId);
   data.checkouts = merge(data.checkouts, changes.putCheckouts, undefined, (c) => c.sessionId);
 
+  if (changes.replaceStripeEvents !== undefined) {
+    data.stripeEvents = [...changes.replaceStripeEvents];
+  }
+  data.stripeEvents = merge(
+    data.stripeEvents,
+    changes.putStripeEvents,
+    undefined,
+    (event) => event.eventId,
+  );
+
   if (changes.replaceLedger !== undefined) data.ledger = [...changes.replaceLedger];
   if (changes.appendLedger !== undefined) data.ledger = [...data.ledger, ...changes.appendLedger];
 }

@@ -116,6 +116,7 @@ export {
   applyCharge,
   applyGrant,
   applyRefund,
+  applyReversal,
   applyTopUp,
   insufficientBalance,
   ledgerBalance,
