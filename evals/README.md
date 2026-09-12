@@ -65,9 +65,12 @@ export ANTHROPIC_API_KEY=sk-ant-...
 pnpm evals run --to de,es,fr,pl,bg,el,ja,hi
 ```
 
-A full run is the whole corpus into eight languages plus judging. On the
-current, reduced corpus that is a few dollars; on the full-length corpus the
-specification's estimate is $25 to $35 per run. `pnpm evals run --help` lists
+A full run is the whole corpus into eight languages plus judging. **On this
+corpus that is projected at $13 to $18, or $10 to $12 with `--no-judge`**, from
+the measured per-file costs in the root `README.md`; nobody has run it, and it
+needs the founder's approval. Specification section 10.4 budgets $25 to $35,
+which does not reconcile with its own corpus and targets — see
+`apps/web/README.md`. `pnpm evals run --help` lists
 every flag; `--no-judge` gives a structural and cost run with no judge spend,
 `--only comedy/` narrows the corpus, and `--lane economy` runs the Message
 Batches path.

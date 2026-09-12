@@ -205,8 +205,21 @@ and to write the reading down. These are all of them.
 
 ## Where the specification is wrong
 
-Two things in the specification are not ambiguous, they are incorrect, and both
-cost money before anyone noticed.
+Three things in the specification are not ambiguous, they are incorrect. Two of
+them cost money before anyone noticed.
+
+**Section 10.4's eval budget does not reconcile with the rest of the
+specification.** It says a full run is "roughly 20 files at Sonnet 5 prices plus
+judging, about $25 to $35". The same section defines the corpus as about 20
+files of 300 to 2,600 cues and the targets as eight languages, and section 5.3
+prices a 650-cue drama episode at $0.39 and a 1,400-cue film at $0.75. Twenty
+files averaging a thousand cues, into eight languages, is about $88 of
+translation before a judge call is made. Either the $25 to $35 is the cost of
+one target language rather than all eight, or it is out by a factor of three.
+Nothing depends on the answer yet, because the corpus is smaller than the
+section asks for and the measured projection for what does exist is $13 to $18
+(root `README.md`), but the number should not be quoted as a budget until the
+founder says which it is.
 
 **Section 4.5's `custom_id` of `{jobId}:{batchIndex}` is rejected by the
 Message Batches API.** A `custom_id` must match `^[a-zA-Z0-9_-]{1,64}$`, and a

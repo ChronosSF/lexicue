@@ -55,7 +55,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 618 tests, in two Vitest projects: the packages and the app
+pnpm test        # 624 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -91,8 +91,9 @@ untranslated, because English is not Bulgarian.
 
 ## Testing against the real API
 
-Steps 1 to 3 have now been run; what they measured, and the three fixes they
-forced, are in the section after this one.
+Steps 1 to 3 have now been run on both lanes, and a fourth file added for step
+3½; what they measured, and the four fixes they forced, are in the sections
+after this one. Step 4 has never been run.
 
 1. **Set the key.** Copy `.env.example` to `.env` at the repository root and
    paste the key after the equals sign. The file is git-ignored, and only the
@@ -138,10 +139,12 @@ forced, are in the section after this one.
    pnpm evals run --to de,es,fr,pl,bg,el,ja,hi
    ```
 
-   The whole corpus into eight languages, with judging. On the current, reduced
-   corpus that is a few dollars; the specification's estimate for the
-   full-length corpus is $25 to $35 per run (section 10.4). `--no-judge` removes
-   the judging spend.
+   The whole corpus into eight languages, with judging. **Projected at $13 to
+   $18 on the present corpus**, from the measured per-file costs below;
+   `--no-judge` takes it to $10 to $12. **This needs the founder's approval and
+   has never been run.** Specification section 10.4 budgets $25 to $35, which
+   does not reconcile with its own corpus and targets; `apps/web/README.md` says
+   why.
 
 **What a real run costs at production scale**, from specification section 5.3:
 a feature film is about **$0.75** on the fast lane and **$0.58** on the economy
@@ -350,6 +353,95 @@ One reporting gap this run exposed: the upload total counts the three file
 reports and not the season glossary pass, so the $0.0263 above is the sum of
 the files and the true spend is a little higher. The same is true of the
 fast-lane figure, so the comparison holds.
+
+### A multi-batch file, as measured on 12 September 2026
+
+`drama/the-signal-box.srt` — 400 cues, 13,339 characters, four batches at the
+default batch size of 120 — into German on the fast lane, `claude-sonnet-5` at
+effort `medium`. The first file this repository has translated that is more than
+one batch. Outputs under `.local/runs/2026-09-12-1710-signal-box-de/`.
+
+| What              | Measured                                                                 |
+| ----------------- | ------------------------------------------------------------------------ |
+| Wall time         | 100.6 s for 400 cues, four batches, first batch alone then three at once |
+| Tokens            | 24,675 in, 16,705 out                                                    |
+| Cache             | 8,766 written **once**, 28,039 read                                      |
+| Model cost        | $0.2439, against $0.41 charged                                           |
+| Per 1,000 chars   | $0.0183                                                                  |
+| Per cue           | $0.00061                                                                 |
+| Repairs, untrans. | none, none                                                               |
+| Advisory          | 102 cues over 20 characters per second, 66 lines over 42 characters      |
+
+**Every batch after the first read the cached prefix.** The proof is in the
+write column: 8,766 cache-creation tokens is exactly one prefix, so only the
+first batch wrote one, and the 28,039 read tokens are the other three batches
+plus the glossary pass reading it back. This is the path specification section
+4.4 describes and section 5.4 prices, and it had never run before: every other
+fixture is a single batch, which writes the entry and reads nothing.
+
+**Consistency held across all four batches.** The running line "The line
+doesn't care." comes back as `Der Strecke ist das egal.` in all nine places it
+appears, in every one of the four batches, with no variation at all. Agnes,
+Dessie, Rosaleen, Mr. Bracewell, Fintan, Ballyfin Halt and Kilcarn Junction are
+spelled identically throughout. The lever joke survives as a number: the count
+is `Einunddreißig.` in batches 0, 1 and 2, and `Zweiunddreißig.` at the payoff
+in batch 3. Every index line, timing line and inline tag came back identical to
+the source, re-parsed and compared cue by cue.
+
+**Against section 5.3's cost model.** The section prices a 1,400-cue,
+60,000-character film at $0.75, which is $0.0125 per 1,000 characters and
+$0.000536 per cue. This file came in at **$0.0183 per 1,000 characters, 46%
+above the model — but $0.00061 per cue, only 14% above it.** Put the three
+measured fast-lane runs in one column and the pattern is hard to miss:
+
+| File                     | Cues | Chars/cue | Per 1,000 chars |   Per cue |
+| ------------------------ | ---: | --------: | --------------: | --------: |
+| `season/*.srt` (3 files) |   81 |      25.9 |         $0.0412 | $0.001065 |
+| `comedy/the-lamp-room`   |   38 |      27.9 |         $0.0302 | $0.000845 |
+| `drama/the-signal-box`   |  400 |      33.3 |         $0.0183 | $0.000610 |
+| Section 5.3's film       | 1400 |      42.9 |         $0.0125 | $0.000536 |
+
+Cost per cue moves by a factor of two across that range; cost per 1,000
+characters moves by a factor of three. **A real part of the cost is per cue and
+not per character** — the id and the `{"i":…,"t":"…"}` wrapper are the same
+size whether a cue holds four words or fourteen — and the price is metered per
+character. A file of short, dense exchanges therefore costs more to produce per
+character than section 5.3's arithmetic says, and earns less per cue. It is not
+a problem at these margins, and the 10-cent minimum covers the small end, but
+it is the reason a hearing-impaired edition or a rapid-dialogue comedy is the
+worst case rather than a long film. **Nobody should conclude from three files
+that the model needs changing**; the point is that the next measurement worth
+making is a file with the section's own 43 characters per cue.
+
+The advisory count is a property of the fixture, not of the translation: its
+timings were laid out at 13 to 19 characters per second in English, and German
+expands, so a quarter of the cues land over the 20-per-second threshold. A
+professionally timed source would leave more room.
+
+### What a full real eval would cost, for the founder to approve
+
+**Not run.** Projected from the measurements above, for the enlarged corpus of
+13 files, 1,740 cues and 54,217 characters into the eight targets of section
+10.4, with the Opus 5 judge:
+
+| Part                                            |      Cost |
+| ----------------------------------------------- | --------: |
+| Translation, German pass (measured where known) |     $1.17 |
+| Translation, all eight targets                  |    $10.25 |
+| Judging, Opus 5, 20 cues per file               |     $4.00 |
+| Cross-episode consistency judging               |     $0.26 |
+| **Total**                                       | **$14.5** |
+
+Call it **$13 to $18**, and $10 to $12 with `--no-judge`. What is measured in
+that: the signal box at $0.2439, the season at $0.0863, the lamp room at
+$0.0321, and Bulgarian costing 1.06 times German over the same four files. What
+is modelled: the 1,000-cue file by interpolation, the seven short files at the
+lamp room's cost, and Greek, Japanese and Hindi at 1.17 to 1.28 times German on
+section 5.2's expansion factors, which are themselves estimates. The judge
+figure assumes it reads every file whole, which `renderJudgeRequest` does.
+
+**`pnpm evals run` without `--fake` costs this much and needs the founder's
+approval.** Nobody has run it.
 
 ## Handover: what was left out, and what was simplified
 
