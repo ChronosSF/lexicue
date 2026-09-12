@@ -169,11 +169,14 @@ Options
   --context <text>       Up to 500 characters of context for the whole upload
   --line-handling <mode> reflow (default) or keep, to keep the source line count
   --no-lyrics            Leave song lyrics in the source language
-  --model <id>           Override the configured model id
+  --model <id>           Override the configured model id (default: claude-sonnet-5,
+                         the product's translation model on both lanes). For
+                         measurement runs; it is not a product setting.
   --fallback-model <id>  Model a refused batch is retried on (default: claude-opus-5).
                          Pin it to --model to keep a comparison to one model.
   --effort <level>       low, medium (default), high, xhigh or max
-                         Ignored by models that reject it, such as claude-haiku-4-5
+                         Left off entirely for a model that rejects the field; the
+                         report prints the effort actually sent
   --batch-size <n>       Cues per request (default: 120)
   --concurrency <n>      Batches in flight per file (default: 12)
   --out <dir>            Write outputs to this directory instead of alongside the inputs

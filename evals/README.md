@@ -74,6 +74,15 @@ repairs the harness had to make, wall time, token usage, model cost, and the
 share of prefix tokens served from the cache rather than written to it — which
 is how the economy lane's real cache-hit rate gets measured.
 
+**The model under test**
+
+Claude Sonnet 5, on both lanes. Haiku 4.5 was measured against it on 11
+September 2026 and is not an option for this product: it renders the season's
+own location three ways in three episodes, leaves screen text in English and
+lets the running joke drift. The root `README.md` carries the numbers and the
+decision. `--model` exists for measuring a future model, not for choosing a
+cheaper one.
+
 **Quality**
 
 An LLM judge scores a stratified sample of cues from 1 to 5 on accuracy,
@@ -100,8 +109,7 @@ visible in review.
 - The effort sweep (`low`, `medium`, `high`), which the runner already supports
   through `--model` and a config override, but which has not been run because it
   needs the real API.
-- A judged Haiku 4.5 comparison. The unjudged one has been run — through the
-  command-line tool rather than this runner, over four files into German and
-  Bulgarian; the root `README.md` has its cost, structural and cross-episode
-  consistency results. Nobody has yet scored either model on the rubric in
-  `src/rubric.ts`, which is what would turn that into a quality verdict.
+- A judged run of any kind. The rubric in `src/rubric.ts` is frozen and the
+  runner drives it, but no real judging spend has been made, so every quality
+  statement in this repository so far is a structural, cost or consistency
+  measurement plus a reading of the files.

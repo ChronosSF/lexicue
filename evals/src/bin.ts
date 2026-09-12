@@ -21,7 +21,8 @@ Options
   --fake                 Use the deterministic fake model and judge; no key needed
   --to <codes>           Comma-separated targets (default: ${EVAL_TARGETS.join(",")})
   --lane fast|economy    Delivery lane (default: fast)
-  --model <id>           Translation model id
+  --model <id>           Translation model id (default: claude-sonnet-5, the
+                         product's translation model on both lanes)
   --judge-model <id>     Judge model id (default: claude-opus-5)
   --sample <n>           Cues judged per file (default: 20)
   --no-judge             Structure and cost only; no judge calls

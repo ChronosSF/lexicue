@@ -149,14 +149,14 @@ run, as section 6.8 says.
 
 ## The measurements specification section 5.5 asks for
 
-| What to measure                                        | Where the code records it                                                                                                                                                            |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Thinking overhead at `low`, `medium` and `high` effort | `report.usage.outputTokens` per file, printed by the CLI and stored in `result.json`. Sweep with `pnpm harness translate … --effort low\|medium\|high` on the same file and compare. |
-| Real expansion factors per target language             | `report.dialogueChars` against `report.usage.outputTokens` for the same file into each target; the eval runner records both for every file and language in one `result.json`.        |
-| Characters of dialogue per token per language          | The same two fields; this is what ties the price per 1,000 characters to the cost per token.                                                                                         |
-| The economy lane's cache-hit rate                      | `advisory.cacheReadShare` in the eval results, and `usage.cacheReadInputTokens` against `usage.cacheCreationInputTokens` in every file report.                                       |
-| The economy lane's turnaround                          | `report.wallTimeMs`, which spans submission to collection on that lane.                                                                                                              |
-| Whether Haiku 4.5 is acceptable for the economy lane   | `--model claude-haiku-4-5` on the CLI or the eval runner; the judge's four axes in `result.json` are the comparison.                                                                 |
+| What to measure                                        | Where the code records it                                                                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thinking overhead at `low`, `medium` and `high` effort | `report.usage.outputTokens` per file, printed by the CLI and stored in `result.json`. Sweep with `pnpm harness translate … --effort low\|medium\|high` on the same file and compare.              |
+| Real expansion factors per target language             | `report.dialogueChars` against `report.usage.outputTokens` for the same file into each target; the eval runner records both for every file and language in one `result.json`.                     |
+| Characters of dialogue per token per language          | The same two fields; this is what ties the price per 1,000 characters to the cost per token.                                                                                                      |
+| The economy lane's cache-hit rate                      | `advisory.cacheReadShare` in the eval results, and `usage.cacheReadInputTokens` against `usage.cacheCreationInputTokens` in every file report.                                                    |
+| The economy lane's turnaround                          | `report.wallTimeMs`, which spans submission to collection on that lane.                                                                                                                           |
+| Whether Haiku 4.5 is acceptable for the economy lane   | **Measured, and the answer is no** — the dated comparison below. Sonnet 5 translates on both lanes, and the economy lane's discount comes from the Message Batches API, not from a cheaper model. |
 
 The cost model itself (`packages/harness/src/cost.ts`) carries the price table
 of specification section 5.1 and reproduces the worked breakdown of section 5.4
@@ -207,7 +207,22 @@ carried across episodes — "The Light has opinions" is `Das Licht hat Meinungen
 in all three, and Marta, Petar and Skerry Point are spelled identically
 throughout.
 
-### Haiku 4.5 against Sonnet 5, as measured on 11 September 2026
+### Why Haiku 4.5 is not an option, as measured on 11 September 2026
+
+**Claude Sonnet 5 is the translation model on both lanes. Haiku 4.5 is not a
+fallback, a candidate or an open question; it was measured against Sonnet 5 on
+11 September 2026 and it is not good enough for what this product sells.** The
+economy lane is Sonnet 5 through the Message Batches API, so its discount comes
+from the API's half price rather than from a weaker model. The comparison below
+is the dated record of why, and the capability table in
+`packages/harness/src/model-capabilities.ts` keeps Haiku's request surface as
+data so a future measurement of any model costs nothing to set up.
+
+This decision settles what the specification left open in section 5.1 ("held in
+reserve"), section 6.9 (the "prepared fallback" at 1 cent per 1,000 characters)
+and section 12.1 item 7. The specification is not wrong about any of it — it
+asked for the measurement before deciding, the measurement was made, and this is
+the answer.
 
 The same four files — `comedy/the-lamp-room.srt` and the three-episode season,
 119 cues, 3,158 characters of dialogue — into German and Bulgarian, fast lane.
@@ -227,7 +242,8 @@ Haiku costs **37% of Sonnet** across both languages and takes **about twice as
 long** in wall time. It reads nothing from the prompt cache at this file length
 and is right not to: its minimum cacheable prefix is 4,096 tokens and the
 largest request here was 3,419, so no entry is ever created. At feature length
-the prefix clears that bar and the gap should widen further in Haiku's favour.
+the prefix clears that bar and the cost gap would widen. That is the whole case
+for it, and it is a cost case.
 
 Cheaper is not the same as good enough, and the season is where it shows:
 
@@ -247,14 +263,24 @@ Cheaper is not the same as good enough, and the season is where it shows:
 Haiku also flags worse on the advisory yardsticks in German: 21 reading-speed
 and 17 line-length findings against Sonnet's 15 and 12 over the same 119 cues.
 
+All three failures are the thing this product sells. A name that changes
+spelling between episodes, screen text left in English and a running joke that
+drifts are exactly what whole-season context is for, and they are what the
+market argument in specification section 6.7 rests on. A model that loses them
+is not a cheaper version of the product; it is one of the cheap tools the
+premium is meant to be earned against. That is why the decision is closed rather
+than deferred to a judged run, and why nothing about Haiku 4.5 is left to
+measure — a thinking budget might narrow the quality gap, but a Haiku that
+thinks is no longer the cheap arm of the comparison.
+
 The outputs are under `.local/runs/2026-09-11-2200-*`, one directory per arm,
 each with its `report.json`. No judge was run: these are structural, cost and
 consistency measurements plus a reading of the files.
 
 Still unmeasured: every effort level other than `medium`, every language other
-than German and Bulgarian, the economy lane's cache-hit rate and turnaround, and
-Haiku 4.5 with a thinking budget. The economy lane has never been run against
-the real API at all, and no LLM judge has scored either model.
+than German and Bulgarian, and the economy lane's cache-hit rate and turnaround.
+The economy lane has never been run against the real API at all, and no LLM
+judge has scored a run on the rubric.
 
 ## Handover: what was left out, and what was simplified
 
