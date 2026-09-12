@@ -2,6 +2,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_HARNESS_CONFIG } from "@lexicue/harness";
+import { priceFile } from "@lexicue/pricing";
 import { parseSubtitleText } from "@lexicue/subtitles";
 import {
   EVAL_TARGETS,
@@ -93,6 +95,70 @@ describe("the corpus", () => {
     expect(third?.job.document.cues.some((cue) => cue.lines.join(" ").includes("Petar"))).toBe(
       true,
     );
+  });
+
+  /**
+   * Everything else in the corpus is 23 to 39 cues, which is a single batch:
+   * it can never read the prompt cache, and its fixed costs are never
+   * amortised, so it cannot say anything about the per-file cost model of spec
+   * section 5.3. These two can.
+   */
+  it("has two full-length fixtures, each of several batches", () => {
+    const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
+    const expected = [
+      { path: "drama/the-signal-box.srt", cues: 400, batches: 4 },
+      { path: "comedy/the-inventory.srt", cues: 1000, batches: 9 },
+    ];
+    for (const { path, cues, batches } of expected) {
+      const document = byPath.get(path)?.job.document;
+      expect(document?.cues).toHaveLength(cues);
+      expect(document?.warnings).toEqual([]);
+      expect(Math.ceil(cues / DEFAULT_HARNESS_CONFIG.batchSize)).toBe(batches);
+    }
+  });
+
+  /**
+   * The 10-cent floor decides the price of every short fixture, so none of them
+   * exercises the metered rate. Both of these are priced by the rate on both
+   * lanes, and the economy price is two thirds of the fast one as section 6.2
+   * says it should be.
+   */
+  it("prices the full-length fixtures by the metered rate, not the 10-cent floor", () => {
+    const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
+    for (const path of ["drama/the-signal-box.srt", "comedy/the-inventory.srt"]) {
+      const document = byPath.get(path)?.job.document;
+      expect(document).toBeDefined();
+      if (document === undefined) continue;
+      expect(document.dialogueChars).toBeGreaterThan(10_000);
+      for (const lane of ["fast", "economy"] as const) {
+        const price = priceFile(document.dialogueChars, lane);
+        expect(price.atMinimum).toBe(false);
+        expect(price.priceCents).toBe(previewPrice(document, lane));
+      }
+      expect(previewPrice(document, "economy")).toBeLessThan(previewPrice(document, "fast"));
+    }
+  });
+
+  /**
+   * A motif that appears in one batch proves nothing. These appear in every
+   * batch of their file, which is what makes a real run able to show whether
+   * the cached prefix is keeping a phrase consistent across parallel requests.
+   */
+  it("carries a recurring line through every batch of each full-length fixture", () => {
+    const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
+    const motifs = [
+      { path: "drama/the-signal-box.srt", line: "The line doesn't care.", batches: 4 },
+      { path: "comedy/the-inventory.srt", line: "Count it twice, say it once.", batches: 9 },
+    ];
+    for (const { path, line, batches } of motifs) {
+      const cues = byPath.get(path)?.job.document.cues ?? [];
+      const hit = new Set<number>();
+      for (const cue of cues) {
+        if (!cue.lines.join(" ").includes(line)) continue;
+        hit.add(Math.floor((cue.id - 1) / DEFAULT_HARNESS_CONFIG.batchSize));
+      }
+      expect(hit.size).toBe(batches);
+    }
   });
 
   it("separates the season from the standalone files", () => {

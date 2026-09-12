@@ -7,10 +7,11 @@ justifies the price premium over the cheap tools in section 6.7.
 
 ## The corpus
 
-`evals/corpus` holds eleven files, all written for this project. Nothing in it
-is copied from a real film, a real subtitle release, or anyone else's work, so
-the whole corpus is safe to redistribute. `manifest.json` describes each file
-and says what it exists to cover.
+`evals/corpus` holds thirteen files, 1,740 cues and 54,217 characters of
+dialogue, all written for this project. Nothing in it is copied from a real
+film, a real subtitle release, or anyone else's work, so the whole corpus is
+safe to redistribute. `manifest.json` describes each file and says what it
+exists to cover.
 
 | Area                     | Files                                                                                                                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -21,13 +22,33 @@ and says what it exists to cover.
 | Non-English sources      | `german/der-leuchtturm.srt`, `spanish/el-faro.srt`                                                                                                                             |
 | The other two formats    | `formats/the-lamp-room.microdvd.sub`, `formats/the-lamp-room.subviewer.sub` — the same dialogue as the comedy, so all three must price identically                             |
 | A three-episode season   | `season/skerry-point-s01e0{1,2,3}.srt` — Marta and Ivo throughout, Petar introduced late in episode two, and three running jokes (the gulls, the stairs, the Light's opinions) |
+| Full length              | `drama/the-signal-box.srt` (400 cues, four batches) and `comedy/the-inventory.srt` (1,000 cues, nine batches) — see below                                                      |
 
 **Scale.** The specification asks for about twenty files of 300 to 2,600 cues.
-These eleven files are 23 to 39 cues each. They cover every _shape_ the
-specification lists, and the runner does not care how long a file is, but they
-do not yet exercise a feature-length file's batching, cost or latency. Writing
-the full-length fixtures is the first thing to do before the eval is used to
-make a pricing or effort decision.
+Eleven of these thirteen are 23 to 39 cues, which is one batch each: they cover
+every _shape_ the specification lists, but a single-batch file can never read
+the prompt cache and never amortises a file's fixed cost, so it can say nothing
+about the cost model of specification section 5.3.
+
+The other two exist for exactly that. **`drama/the-signal-box.srt`** is 400
+cues and 13,339 characters, four batches at the default batch size of 120;
+**`comedy/the-inventory.srt`** is 1,000 cues and 31,241 characters, nine
+batches. Both are priced by the metered rate rather than the 10-cent floor,
+which no other fixture is. Both were written for the seams: a line that recurs
+in _every_ batch of the file ("The line doesn't care." nine times; "Count it
+twice, say it once." fifteen times), names that appear in some batches and not
+others, fixed terms whose everyday meanings are wrong (the railway "tablet" is
+a token, not a pill), and a running count that is deliberately incorrect until
+the last batch. A translation that loses the thread between parallel requests
+shows up in those, and nowhere else in this corpus.
+
+Timings were laid out from the written dialogue at a spread of reading speeds,
+with pauses inside scenes and about nine seconds between them, which puts the
+400-cue file at 28 minutes and the 1,000-cue file at 1 hour 12. The dialogue
+itself, which is the part that gets translated, was written by hand.
+
+What is still missing against section 10.4 is breadth rather than length: it
+asks for about twenty files, and a file at the 2,600-cue end.
 
 ## Running it
 
@@ -102,7 +123,8 @@ visible in review.
 
 ## Still to do
 
-- The full-length fixtures described under **Scale** above.
+- The rest of the breadth section 10.4 asks for: about twenty files, and one at
+  the 2,600-cue end. Two full-length fixtures now exist; see **Scale** above.
 - The blind pairwise preference test against the cheap tools of specification
   section 6.7, which decides whether the fast lane keeps its premium. It needs
   native speakers, not code.

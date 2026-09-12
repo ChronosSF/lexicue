@@ -139,6 +139,34 @@
         "all three running jokes",
         "cross-episode consistency"
       ]
+    },
+    {
+      "path": "drama/the-signal-box.srt",
+      "title": "The Signal Box",
+      "genre": "drama",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "covers": [
+        "400 cues in four batches at the default batch size, so every batch after the first reads the cached prefix",
+        "the recurring line \"The line doesn't care.\" nine times, in all four batches",
+        "Agnes, Dessie, Rosaleen and Mr. Bracewell across batches; Fintan only in the last third",
+        "the railway senses of the block, the tablet, the up home and Section C, none of which are their everyday meanings",
+        "a lever count that is wrong in every batch until the last one, where it is right"
+      ]
+    },
+    {
+      "path": "comedy/the-inventory.srt",
+      "title": "The Inventory",
+      "genre": "comedy",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "covers": [
+        "1,000 cues in nine batches at the default batch size, the first file long enough to price like a feature",
+        "the recurring line \"Count it twice, say it once.\" fifteen times, in all nine batches",
+        "a tannoy sign-off, \"Thank you, Pallister's.\", in eight of the nine",
+        "a count of umbrellas that rises by one each time it is mentioned, across five batches",
+        "Haberdashery, Bay Twelve, the goods lift and the grotto as fixed terms"
+      ]
     }
   ]
 }

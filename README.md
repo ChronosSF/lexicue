@@ -446,12 +446,15 @@ whitespace-level normalisations exist around it:
   measured. The table above says where each measurement will land.
 - The blind pairwise preference test against the cheap tools of section 6.7,
   which decides whether the fast lane keeps its premium, needs native speakers.
-- The eval corpus is eleven hand-written files of 23 to 39 cues rather than the
-  twenty files of 300 to 2,600 cues section 10.4 asks for. It covers every
-  _shape_ — three genres, a hearing-impaired edition, three formats, three
-  source languages, a three-episode season — but not a feature film's length.
-  `evals/README.md` says so at the top, and writing the full-length fixtures is
-  the first thing to do before the eval decides anything about price or effort.
+- The eval corpus is thirteen hand-written files, 1,740 cues and 54,217
+  characters, against the twenty files of 300 to 2,600 cues section 10.4 asks
+  for. Eleven of them are 23 to 39 cues and cover every _shape_ — three genres,
+  a hearing-impaired edition, three formats, three source languages, a
+  three-episode season. The two full-length ones, `drama/the-signal-box.srt` at
+  400 cues and `comedy/the-inventory.srt` at 1,000, cover the length: four and
+  nine batches, priced by the metered rate rather than the 10-cent floor, and
+  written so a recurring line falls in every batch. What is still short is
+  breadth, and a file at the 2,600-cue end. `evals/README.md` has the detail.
 
 ## Continuous integration
 
