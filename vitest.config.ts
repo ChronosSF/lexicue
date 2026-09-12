@@ -29,7 +29,11 @@ export default defineConfig({
         test: {
           name: "packages",
           environment: "node",
-          include: ["packages/*/src/**/*.test.ts", "evals/src/**/*.test.ts"],
+          include: [
+            "packages/*/src/**/*.test.ts",
+            "evals/src/**/*.test.ts",
+            "infra/src/**/*.test.ts",
+          ],
           passWithNoTests: true,
         },
       },
@@ -38,7 +42,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
-      include: ["packages/*/src/**/*.ts", "evals/src/**/*.ts"],
+      include: ["packages/*/src/**/*.ts", "evals/src/**/*.ts", "infra/src/**/*.ts"],
       exclude: ["**/*.test.ts", "**/index.ts", "**/bin.ts", "**/__fixtures__/**"],
       thresholds: {
         "packages/subtitles/src/**": {

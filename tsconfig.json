@@ -24,6 +24,9 @@
     },
     {
       "path": "./packages/dev-api"
+    },
+    {
+      "path": "./infra"
     }
   ]
 }

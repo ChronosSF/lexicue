@@ -92,6 +92,7 @@ export function planBatch(
       batchId: input.batchId,
       fileName: file.upload.fileName,
       outputFileName: outputFileName(file.upload.fileName, intake.target.code),
+      sourceKey: uploadKey(file.upload.uploadId),
       status: "queued",
       lane: input.lane,
       format: file.document.format,

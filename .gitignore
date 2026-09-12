@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+cdk.out/
 *.tsbuildinfo
 # Scratch space for anything a local run produces: translated files, reports,
 # uploads held by the local development API. Never next to the corpus, never

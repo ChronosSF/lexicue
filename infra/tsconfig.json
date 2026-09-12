@@ -1,0 +1,34 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": ["node"],
+    // The one flag this package turns off, and the only one in the workspace.
+    // aws-cdk-lib's types are generated from JSII, which declares an optional
+    // property as `foo?: T` and never as `T | undefined`, so under
+    // exactOptionalPropertyTypes a concrete construct is not assignable to its
+    // own interface (`TableV2` to `ITableV2`) and no amount of care at the call
+    // site fixes it. Everything else stays strict.
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "cdk.out"],
+  "references": [
+    {
+      "path": "../packages/subtitles"
+    },
+    {
+      "path": "../packages/pricing"
+    },
+    {
+      "path": "../packages/harness"
+    },
+    {
+      "path": "../packages/shared"
+    },
+    {
+      "path": "../packages/core"
+    }
+  ]
+}

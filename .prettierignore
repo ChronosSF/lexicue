@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+cdk.out/
 pnpm-lock.yaml
 evals/results/
 packages/subtitles/src/__fixtures__/

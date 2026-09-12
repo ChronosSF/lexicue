@@ -82,6 +82,12 @@ export interface JobRecord {
   batchId: string;
   fileName: string;
   outputFileName: string;
+  /**
+   * Where the uploaded bytes are, as section 7.4's `sourceKey`. A job cannot
+   * derive it: the upload id it came from is not the job id, and a worker that
+   * picks a message off a queue has to be able to re-read what was charged for.
+   */
+  sourceKey: string;
   status: JobStatus;
   lane: Lane;
   format: SubtitleFormat;

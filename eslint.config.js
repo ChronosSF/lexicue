@@ -97,6 +97,19 @@ export default tseslint.config(
     },
   },
   {
+    // The CDK app and the Lambda handlers. Node globals are their whole job,
+    // and the unimplemented AWS stores of `adapters/aws-stores.ts` take
+    // parameters they deliberately do not use.
+    files: ["infra/src/**/*.ts"],
+    languageOptions: { globals: { ...globals.node } },
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { ignoreRestSiblings: true, argsIgnorePattern: "^_", caughtErrors: "all" },
+      ],
+    },
+  },
+  {
     // The core narrows a batch into a history row by dropping fields, the same
     // way the app and the local API do.
     files: ["packages/core/src/**/*.ts"],

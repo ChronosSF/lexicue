@@ -26,7 +26,7 @@ import {
  */
 
 /** Bumped whenever the stored shape changes; older state is discarded. */
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 interface StoredFile {
   version: number;
