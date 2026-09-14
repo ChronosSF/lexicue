@@ -130,18 +130,16 @@ describe("the corpus", () => {
   });
 
   /**
-   * The 10-cent floor decides the price of every short fixture, so none of them
-   * exercises the metered rate. Both of these are priced by the rate on both
-   * lanes, and the economy price is two thirds of the fast one as section 6.2
-   * says it should be.
-   */
-  /**
    * The regression that the rate table has to survive. Every fixture is parsed
    * and priced with the default table, and every price is the one the manifest
-   * recorded — so the per-cue component and the configurable floor added to
-   * `packages/pricing` cannot have moved a single published price. The manifest
-   * also records what the parser found, so a change there is caught here rather
-   * than as a surprise on the bill.
+   * recorded, so no published price can move without this file moving with it.
+   * The manifest also records what the parser found, so a change there is
+   * caught here rather than as a surprise on the bill.
+   *
+   * The rates changed once, on 14 September 2026, from 3 and 2 cents per 1,000
+   * characters to 1 cent per 1,000 characters plus 8 and 4 cents per 100 cues.
+   * Eleven of the thirteen fixtures sit at the 10-cent floor and did not move a
+   * cent; the two full-length ones did, which was the point.
    */
   it("prices every corpus fixture exactly as the manifest records", () => {
     expect(corpus).toHaveLength(manifest.files.length);
@@ -159,13 +157,19 @@ describe("the corpus", () => {
     }
   });
 
-  it("charges the corpus $2.45 on the fast lane, as every measured run did", () => {
-    const total = corpus.reduce(
-      (sum, entry) => sum + priceCents(meteredOf(entry.job.document), "fast"),
-      0,
+  it("charges the corpus $2.68 on the fast lane and $2.12 on the economy lane", () => {
+    // $2.45 and $2.00 under the per-character rates these replaced on
+    // 14 September 2026; the whole 23-cent rise is the two full-length files.
+    const totalOn = (lane: "fast" | "economy"): number =>
+      corpus.reduce((sum, entry) => sum + priceCents(meteredOf(entry.job.document), lane), 0);
+    expect(totalOn("fast")).toBe(268);
+    expect(totalOn("economy")).toBe(212);
+    expect(totalOn("fast")).toBe(
+      manifest.files.reduce((sum, file) => sum + file.expectedPriceCents.fast, 0),
     );
-    expect(total).toBe(245);
-    expect(total).toBe(manifest.files.reduce((sum, file) => sum + file.expectedPriceCents.fast, 0));
+    expect(totalOn("economy")).toBe(
+      manifest.files.reduce((sum, file) => sum + file.expectedPriceCents.economy, 0),
+    );
   });
 
   it("prices the full-length fixtures by the metered rate, not the 10-cent floor", () => {

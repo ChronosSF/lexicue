@@ -42,19 +42,24 @@ export function LaneChoice({
               </span>
               <span className="lane-delivery">{rate.delivery}</span>
               <span className="lane-note faint">{rate.description}</span>
+              {/*
+                The whole rate in one sentence, because both halves of it are
+                one price: the per-cue component of spec section 6.1 is 8 cents
+                per 100 cues on the fast lane and 4 on the economy lane since
+                14 September 2026, and since both lanes charge the same per
+                character it is the only visible difference between the two
+                cards. One element rather than two so that a screen reader says
+                "of dialogue, plus 8c per 100 cues" rather than running the two
+                lines together; it is still the clause that is conditional, so a
+                rate table that zeroes the cue component leaves the card reading
+                as a plain per-character price rather than "plus 0c".
+              */}
               <span className="lane-rate faint num">
                 {rate.centsPer1000Chars}c per 1,000 characters of dialogue
+                {rate.centsPer100Cues > 0
+                  ? `, plus ${rate.centsPer100Cues.toString()}c per 100 cues`
+                  : ""}
               </span>
-              {/*
-                The per-cue component of spec section 6.1 is zero today, so this
-                line is absent and the card reads exactly as it always has. It
-                appears the moment a rate table with a cue component is served.
-              */}
-              {rate.centsPer100Cues > 0 ? (
-                <span className="lane-rate faint num">
-                  plus {rate.centsPer100Cues}c per 100 cues
-                </span>
-              ) : null}
             </label>
           );
         })}

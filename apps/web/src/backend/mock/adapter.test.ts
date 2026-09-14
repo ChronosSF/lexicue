@@ -36,17 +36,26 @@ interface Harness {
   uploadBytes: (files: { fileName: string; bytes: Uint8Array }[]) => Promise<string[]>;
 }
 
-/** A file with more dialogue than the free balance covers. */
+/**
+ * A file with more dialogue than the free balance covers. At 154 characters per
+ * cue, 1,500 cues is $3.51 on the fast lane against the $2.50 grant.
+ */
 function bigSubtitleFile(cues: number): Uint8Array {
   const line = "A long line of dialogue that carries a great many billable characters indeed.";
   const blocks = Array.from({ length: cues }, (_unused, index) => {
     const start = index * 4;
+    // Hours as well as minutes: past 900 cues this file runs over an hour, and
+    // a "00:60:00,000" timing is not a timing — the parser drops the cue and
+    // the file quietly stops being big enough to test what it is here to test.
     const stamp = (seconds: number): string => {
-      const minutes = Math.floor(seconds / 60)
+      const hours = Math.floor(seconds / 3600)
+        .toString()
+        .padStart(2, "0");
+      const minutes = Math.floor((seconds % 3600) / 60)
         .toString()
         .padStart(2, "0");
       const rest = (seconds % 60).toString().padStart(2, "0");
-      return `00:${minutes}:${rest},000`;
+      return `${hours}:${minutes}:${rest},000`;
     };
     return [(index + 1).toString(), `${stamp(start)} --> ${stamp(start + 3)}`, line, line].join(
       "\n",
@@ -171,7 +180,7 @@ describe("the preview and the charge", () => {
     const test = harness();
     await signedIn(test);
     const uploadIds = await test.uploadBytes([
-      { fileName: "a-very-long-film.srt", bytes: bigSubtitleFile(700) },
+      { fileName: "a-very-long-film.srt", bytes: bigSubtitleFile(1_500) },
     ]);
     const failure = await test.backend
       .createBatch({

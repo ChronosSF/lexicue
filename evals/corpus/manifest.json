@@ -222,8 +222,8 @@
       "cues": 400,
       "dialogueChars": 13339,
       "expectedPriceCents": {
-        "fast": 41,
-        "economy": 27
+        "fast": 46,
+        "economy": 30
       }
     },
     {
@@ -242,8 +242,8 @@
       "cues": 1000,
       "dialogueChars": 31241,
       "expectedPriceCents": {
-        "fast": 94,
-        "economy": 63
+        "fast": 112,
+        "economy": 72
       }
     }
   ]

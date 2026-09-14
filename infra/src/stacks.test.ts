@@ -298,11 +298,11 @@ describe("the api stack", () => {
     expect(prefix).toBe("/lexicue/staging");
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/pricing/fastRateCentsPer1000Chars`,
-      Value: "3",
+      Value: "1",
     });
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/pricing/economyRateCentsPer1000Chars`,
-      Value: "2",
+      Value: "1",
     });
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/pricing/fastMinimumPriceCents`,
@@ -312,16 +312,17 @@ describe("the api stack", () => {
       Name: `${prefix}/pricing/economyMinimumPriceCents`,
       Value: "10",
     });
-    // The per-cue component of the rate table, zero on both lanes: today's
-    // price is purely per character, and the parameter exists so it can move
+    // The per-cue component of the rate table, adopted on 14 September 2026.
+    // It is what makes the economy lane a third cheaper rather than the same
+    // price, both lanes charging 1 cent per 1,000 characters, and it can move
     // without a deploy (spec section 9.8).
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/pricing/fastRateCentsPer100Cues`,
-      Value: "0",
+      Value: "8",
     });
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/pricing/economyRateCentsPer100Cues`,
-      Value: "0",
+      Value: "4",
     });
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/model/id`,

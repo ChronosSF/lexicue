@@ -26,10 +26,15 @@ function sampleBytes(path: string): Uint8Array {
   return new Uint8Array(readFileSync(resolve(SAMPLES, path)));
 }
 
-/** Enough dialogue to cost more than the demo's balance: 3 cents per 1,000. */
+/**
+ * Enough dialogue to cost more than the demo's $12.30: 6,000 cues and 948,000
+ * characters is $14.28 on the fast lane, at 1 cent per 1,000 characters plus
+ * 8 cents per 100 cues. It has to clear the balance by less than $5, so that
+ * the smallest top-up is the one offered.
+ */
 function longFilm(): Uint8Array {
   const line = "Every line of this file carries a great many billable characters indeed, truly.";
-  const cues = Array.from({ length: 3_000 }, (_unused, index) => {
+  const cues = Array.from({ length: 6_000 }, (_unused, index) => {
     const second = index % 60;
     const stamp = (value: number): string => value.toString().padStart(2, "0");
     const timing = `00:00:${stamp(second)},000 --> 00:00:${stamp((second + 1) % 60)},500`;

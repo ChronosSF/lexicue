@@ -87,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 742 tests, in two Vitest projects: the packages and the app
+pnpm test        # 748 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 pnpm e2e         # 9 Playwright tests through the app in a real browser
@@ -407,7 +407,7 @@ one batch. Outputs under `.local/runs/2026-09-12-1710-signal-box-de/`.
 | Wall time         | 100.6 s for 400 cues, four batches, first batch alone then three at once |
 | Tokens            | 24,675 in, 16,705 out                                                    |
 | Cache             | 8,766 written **once**, 28,039 read                                      |
-| Model cost        | $0.2439, against $0.41 charged                                           |
+| Model cost        | $0.2439, against the $0.41 charged on the day; $0.46 at today's rates    |
 | Per 1,000 chars   | $0.0183                                                                  |
 | Per cue           | $0.00061                                                                 |
 | Repairs, untrans. | none, none                                                               |
@@ -679,11 +679,21 @@ approval.** Nobody has run it.
 
 ### What the measurements say about the price, as at 14 September 2026
 
-**A decision for the founder. No price has moved.** `packages/pricing` can now
-express a per-cue component and a per-lane floor, and both defaults are today's
-published numbers, so every price in the product is unchanged to the cent
-(`evals/src/evals.test.ts` prices all thirteen fixtures against the manifest).
-This section is the case for changing them.
+**Decided, and applied.** The founder accepted option A below on 14 September
+2026, and it is now the product's default rate table: **1 cent per 1,000
+characters plus 8 cents per 100 cues on the fast lane, 1 cent plus 4 cents on
+the economy lane, the 10-cent floor unchanged on both.** It replaces the 3 and
+2 cents per 1,000 characters of specification section 6.1, which had no per-cue
+component. The rest of this section is the measurement and the arithmetic the
+decision rests on, kept as the record of why.
+
+Everything that quotes a price moved with it in one commit: `packages/pricing`'s
+defaults, the corpus manifest's expected prices, the SSM parameter defaults in
+`infra/`, the lane cards in the app and the browser suite that reads them, and
+the specification's own sections 5.3, 6.1, 6.2, 6.4 and 6.9, which the founder
+amended in parallel. `evals/src/evals.test.ts` prices all thirteen fixtures
+against the manifest, so no published price can move again without that file
+moving with it.
 
 Model cost below is the 14 September v3 corpus run into German, Sonnet 5 at
 effort `medium`, fast lane; the economy figures are the two real economy runs.
@@ -716,7 +726,7 @@ close to separate the per-cue and per-character components by regression. One
 run of a 43-characters-per-cue fixture costs about 25 cents and turns this
 argument from two measured points plus a model into three measured points.
 
-#### Margin at today's rates, per measured shape
+#### Margin at the rates this replaced, per measured shape
 
 | Shape                        | Lane    | Price | Card fee |   Model |   AWS |  Gross |    Margin |
 | ---------------------------- | ------- | ----: | -------: | ------: | ----: | -----: | --------: |
@@ -728,8 +738,8 @@ argument from two measured points plus a model into three measured points.
 | `the-inventory.srt`          | fast    | $0.94 |   $0.055 | $0.5480 | $0.03 | $0.307 | **32.6%** |
 | Section 5.3's film, modelled | fast    | $1.80 |   $0.106 | $0.7500 | $0.03 | $0.914 |     50.8% |
 
-**Today's price under-earns on dense, short-cue files, and that is the only
-place it under-earns.** Section 6.4 promises 45 to 48% blended and 51% on the
+**That price under-earned on dense, short-cue files, and that was the only
+place it under-earned.** Section 6.4 promises 45 to 48% blended and 51% on the
 film. The two measured full-length files return **28.1%** and **32.6%** — 22.7
 and 18.2 points short of the film's margin on the same rate card. In money, to
 earn what the film earns, `the-signal-box.srt` would have to be priced at 62
@@ -778,17 +788,27 @@ and a flat 1 cent loses money on the signal box — $0.14 charged against $0.144
 of model cost, card fee and AWS. The per-100-cues component is what gives the rate card sub-cent
 resolution — the lever section 6.9 assumed when it wrote "2.25 cents per 1,000".
 
-#### Recommendation
+#### Recommendation, and what was done
 
-Adopt **A** — 1 cent per 1,000 characters plus 8 cents per 100 cues on the fast
-lane, 1 cent plus 4 cents on the economy lane — which lifts the two measured
-full-length files from 28.1% and 32.6% margin to 35.3% and 42.5%, leaves every
-file at the 10-cent floor priced exactly as it is today, and makes the
-specification's own feature film 8 cents _cheaper_ rather than dearer. Run one
-full-length fixture at section 5.3's 43 characters per cue first, about 25
-cents, because A's neutrality on the film rests on section 5.3's modelled $0.75
-and not on a measurement, and that single run is the difference between pricing
-an assumption and pricing a number.
+**A was adopted.** It lifts the two measured full-length files from 28.1% and
+32.6% margin to 35.3% and 42.5%, leaves every file at the 10-cent floor priced
+exactly as it was, and makes the specification's own feature film 8 cents
+_cheaper_ rather than dearer. The economy lane keeps the discount it has rather
+than widening it: 4 cents per 100 cues against the fast lane's 8 holds it at
+31.7% to 32.6% off across every shape section 6.1 prices, which is where it sat
+before. Option C's wider discount was not taken.
+
+On the whole corpus the change is **$2.45 to $2.68 on the fast lane and $2.00 to
+$2.12 on the economy lane**. Eleven of the thirteen fixtures are at the floor
+and did not move a cent; the entire difference is `drama/the-signal-box.srt`
+(41 to 46 cents fast, 27 to 30 economy) and `comedy/the-inventory.srt` (94 cents
+to $1.12 fast, 63 to 72 cents economy).
+
+**The one assumption it rested on has now been measured**, which was the
+condition attached to the recommendation: A's neutrality on the feature film
+came from section 5.3's _modelled_ $0.75 at about 43 characters per cue, a
+density no fixture had. `drama/the-crossing-keeper.srt` was written for it and
+run for real; the section below reports what it cost.
 
 ## Handover: what was left out, and what was simplified
 
@@ -1046,7 +1066,7 @@ rather than a command.
 
 ## Test counts and coverage, as measured
 
-742 tests in 40 files, all offline: nothing in the suite touches the network or
+748 tests in 40 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 

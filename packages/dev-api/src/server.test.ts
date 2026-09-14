@@ -419,7 +419,9 @@ describe("what the server refuses", () => {
 
   it("refuses an upload the balance will not cover, with the shortfall", async () => {
     const harness = await start();
-    const big = Array.from({ length: 120 }, (_unused, index) =>
+    // 300 cues of 900 characters is $2.94 on the fast lane, at 1 cent per 1,000
+    // characters plus 8 cents per 100 cues, against the $2.50 free grant.
+    const big = Array.from({ length: 300 }, (_unused, index) =>
       [(index + 1).toString(), "00:00:01,000 --> 00:00:03,000", "x".repeat(900), ""].join("\n"),
     ).join("\n");
     const ids = await upload(harness, [{ fileName: "film.srt", text: big }]);

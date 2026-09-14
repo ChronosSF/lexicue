@@ -17,7 +17,7 @@ import { CentsSchema, LaneSchema } from "./common.js";
 export const LaneRateSchema = z.object({
   lane: LaneSchema,
   centsPer1000Chars: z.int().nonnegative(),
-  /** Zero today, so a lane card shows no per-cue line (spec section 6.1). */
+  /** 8 on the fast lane and 4 on the economy lane today (spec section 6.1). */
   centsPer100Cues: z.int().nonnegative(),
   /** The floor that covers the glossary pass on a tiny file (section 6.4). */
   minimumPriceCents: CentsSchema,

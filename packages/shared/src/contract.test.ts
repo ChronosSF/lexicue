@@ -104,7 +104,7 @@ describe("the contract and the packages it is shared with", () => {
         },
       ],
     });
-    expect(response.examples[0]).toMatchObject({ fastCents: 180, economyCents: 120 });
+    expect(response.examples[0]).toMatchObject({ fastCents: 172, economyCents: 116 });
   });
 
   /**

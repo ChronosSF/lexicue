@@ -31,19 +31,24 @@ test("submits to the economy lane with its own notice, and the file still comes 
   const fastCents = await previewPriceCents(page, FILE, "Fast");
   const economyCents = await previewPriceCents(page, FILE, "Economy");
   // A 27-cue documentary is under the minimum price of spec section 6.1 on
-  // both lanes, so the lane cards are where the third off is visible.
+  // both lanes — 10 cents each — so the lane cards are where the third off is
+  // visible rather than the preview total.
   expect(economyCents).toBeLessThanOrEqual(fastCents);
 
   await chooseLanguage(page, "French");
   await chooseLane(page, "Economy");
 
   // The rate and the delivery promise are on the card the user is choosing.
+  // Both lanes charge 1 cent per 1,000 characters since 14 September 2026, so
+  // the per-100-cues clause is the whole difference the cards can show.
   const economyCard = page.getByRole("radio", { name: /^Economy\s/ });
   await expect(economyCard).toBeChecked();
   await expect(economyCard).toHaveAccessibleName(/Usually within the hour, at most 24 hours/);
-  await expect(economyCard).toHaveAccessibleName(/2c per 1,000 characters of dialogue/);
+  await expect(economyCard).toHaveAccessibleName(
+    /1c per 1,000 characters of dialogue, plus 4c per 100 cues/,
+  );
   await expect(page.getByRole("radio", { name: /^Fast\s/ })).toHaveAccessibleName(
-    /3c per 1,000 characters of dialogue/,
+    /1c per 1,000 characters of dialogue, plus 8c per 100 cues/,
   );
 
   const confirm = page.getByRole("button", { name: /^Translate 1 file/ });

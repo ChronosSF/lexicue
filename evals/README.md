@@ -109,11 +109,11 @@ it says nothing at all about translation quality.
 - Coverage: every cue of the input is a cue of the output.
 - The price charged equals the price a preview would have shown from the source.
 - Every fixture prices exactly as `corpus/manifest.json` records it, on both
-  lanes, under the default rate table: $2.45 for the corpus on the fast lane,
-  which is what every measured run has charged. The manifest carries each file's
-  cue count, character count and expected price, so a change to the parser, the
-  price function or the rate table has to change that file too — nothing may
-  move a published price by accident.
+  lanes, under the default rate table: $2.68 for the corpus on the fast lane and
+  $2.12 on the economy lane, at the rates adopted on 14 September 2026. The
+  manifest carries each file's cue count, character count and expected price, so
+  a change to the parser, the price function or the rate table has to change
+  that file too — nothing may move a published price by accident.
 
 **Advisory metrics**
 
@@ -204,14 +204,17 @@ arms of the effort sweep are there, named in the root `README.md`.
 
 ## What the corpus costs, and what it earns
 
-The per-file model cost, the margin at today's rates, and three concrete rate
-tables the founder could move to are in the root `README.md`, under **"What the
-measurements say about the price"**. The short version: cost tracks cues more
-closely than characters, the price meters characters only, and the two
-full-length fixtures therefore return 28.1% and 32.6% margin where the
-specification's own film shape returns 50.8%. `packages/pricing` can now express
-a per-cue component and a per-lane floor; both defaults are today's published
-numbers, so nothing has changed yet.
+The per-file model cost and the margin at the rates in force are in the root
+`README.md`, under **"What the measurements say about the price"**. The short
+version: cost tracks cues more closely than characters, and until 14 September
+2026 the price metered characters only, so the two full-length fixtures returned
+28.1% and 32.6% margin where the specification's own film shape returned 50.8%.
+
+**The rates changed on 14 September 2026** to 1 cent per 1,000 characters plus
+8 cents per 100 cues on the fast lane and 1 cent plus 4 cents on the economy
+lane, floor unchanged at 10 cents. Those two fixtures now return 35.3% and
+42.5%; every other fixture is at the floor and did not move a cent. The corpus
+costs $2.68 on the fast lane, up from $2.45.
 
 ## Still to do
 

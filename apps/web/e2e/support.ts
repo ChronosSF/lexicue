@@ -213,7 +213,14 @@ export async function addZip(
  * is about 100,000 characters, which is $3 on the fast lane: over the $2.50
  * grant, and under the $7.50 a single top-up leaves behind.
  */
-export function longFilmSrt(cues = 700): string {
+/**
+ * A film with more dialogue than the $2.50 free balance covers, and not so much
+ * more that the smallest top-up cannot cover it. At 144 characters per cue,
+ * 1,500 cues is $3.36 on the fast lane under the rates adopted on 14 September
+ * 2026 — 1 cent per 1,000 characters plus 8 cents per 100 cues — so the
+ * shortfall is 86 cents and $5 is the top-up offered.
+ */
+export function longFilmSrt(cues = 1_500): string {
   const line = "Every line of this file carries a great many billable characters indeed.";
   const stamp = (ms: number): string => {
     const pad = (value: number, size = 2): string => value.toString().padStart(size, "0");
