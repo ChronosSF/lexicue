@@ -126,7 +126,12 @@ export interface TranslationModelClient {
   countTokens(request: TokenCountRequest): Promise<number>;
 }
 
-/** One request inside a Message Batch, keyed by `{jobId}:{batchIndex}`. */
+/**
+ * One request inside a Message Batch, keyed by `{jobId}_{batchIndex}`. The
+ * separator is an underscore, not the colon in spec section 4.5, because a
+ * `custom_id` must match `^[a-zA-Z0-9_-]{1,64}$`; see `CUSTOM_ID_PATTERN` in
+ * batches.ts.
+ */
 export interface BatchRequestItem {
   customId: string;
   request: ModelRequest<unknown>;

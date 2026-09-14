@@ -19,7 +19,12 @@ export interface TranslationOptions {
 
 /** One file to translate. */
 export interface TranslationJob {
-  /** Used in Message Batch custom ids as `{jobId}:{batchIndex}`. */
+  /**
+   * Used in Message Batch custom ids as `{jobId}_{batchIndex}`. The separator
+   * is an underscore, not the colon spec section 4.5 asks for: the API accepts
+   * only `^[a-zA-Z0-9_-]{1,64}$` and rejects the whole batch otherwise, so the
+   * job id must fit that set too. See `CUSTOM_ID_PATTERN` in batches.ts.
+   */
   jobId: string;
   fileName: string;
   document: SubtitleDocument;

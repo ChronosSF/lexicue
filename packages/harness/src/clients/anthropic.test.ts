@@ -206,7 +206,7 @@ function message(text: string): Anthropic.Message {
 describe("Message Batch results", () => {
   it("reads the structured output out of a succeeded entry", () => {
     const item = toBatchResultItem({
-      custom_id: "job-1:0",
+      custom_id: "job-1_0",
       result: { type: "succeeded", message: message('{"cues":[{"i":1,"t":"Hallo."}]}') },
     });
     expect(item.outcome).toBe("succeeded");
@@ -216,7 +216,7 @@ describe("Message Batch results", () => {
 
   it("reports null rather than throwing when an entry is not JSON", () => {
     const item = toBatchResultItem({
-      custom_id: "job-1:0",
+      custom_id: "job-1_0",
       result: { type: "succeeded", message: message("I am sorry, but") },
     });
     expect(item.response?.parsed).toBeNull();
@@ -224,7 +224,7 @@ describe("Message Batch results", () => {
 
   it("carries the error of an errored entry", () => {
     const item = toBatchResultItem({
-      custom_id: "job-1:1",
+      custom_id: "job-1_1",
       result: {
         type: "errored",
         error: {
@@ -402,18 +402,18 @@ describe("the client against a stubbed SDK", () => {
     });
     const results = vi.fn().mockResolvedValue([
       {
-        custom_id: "job-1:0",
+        custom_id: "job-1_0",
         result: { type: "succeeded", message: message('{"cues":[{"i":1,"t":"Hallo."}]}') },
       },
     ]);
     const client = new AnthropicTranslationClient({ client: stub({ create, retrieve, results }) });
 
     const batchId = await client.submitBatch([
-      { customId: "job-1:0", request: request("economy") },
+      { customId: "job-1_0", request: request("economy") },
     ]);
     expect(batchId).toBe("msgbatch_01");
     const sent = create.mock.calls[0]?.[0] as Anthropic.Messages.BatchCreateParams;
-    expect(sent.requests[0]?.custom_id).toBe("job-1:0");
+    expect(sent.requests[0]?.custom_id).toBe("job-1_0");
     expect(sent.requests[0]?.params.output_config?.format).toMatchObject({ type: "json_schema" });
 
     const status = await client.getBatch("msgbatch_01");
