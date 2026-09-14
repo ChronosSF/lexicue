@@ -16,6 +16,17 @@ pnpm --filter @lexicue/infra synth -- -c env=staging   # needs the aws-cdk CLI
 useful to somebody with an account, and `pnpm dlx aws-cdk@2 synth` gets it when
 that day comes. The assertion tests do not need it.
 
+**`esbuild` is a devDependency of the root package.json, and that is not an
+accident.** `NodejsFunction` bundles by spawning `pnpm exec -- esbuild` with
+its working directory set to the directory holding `pnpm-lock.yaml` — the
+repository root, which is also where `pnpm test` starts — so the root is the
+only manifest whose dependencies put `esbuild` on that command's path. It is
+pinned to the exact version Vite and tsx already resolve (0.28.2) so no second
+copy is installed; `pnpm why esbuild` shows what that is, and the pin should
+move when it does. `infra/src/functions.ts` has the long version. Without it
+the suite does not merely fail an assertion, it fails to load, which is how it
+passed on a laptop with a stale bin and went red on a clean CI runner.
+
 ## The six stacks
 
 | Stack        | What it owns                                                                                            |

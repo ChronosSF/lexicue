@@ -20,6 +20,37 @@ import type { EnvironmentConfig } from "./config.js";
  * keeps the rates, the model id, the effort and the limits in SSM so a change
  * needs no deploy, and section 8 keeps every secret out of environment
  * variables entirely, so nothing here is a value anyone could spend.
+ *
+ * ## Why `esbuild` is a devDependency of the *root* package.json
+ *
+ * `NodejsFunction` bundles locally rather than in Docker whenever it can find
+ * esbuild, and it decides how to invoke it from the lockfile: `pnpm-lock.yaml`
+ * means the runner is `pnpm exec -- esbuild`, spawned with its working
+ * directory set to the project root — the directory holding the lockfile CDK
+ * found by walking up from the process's cwd. Under `pnpm test` that process
+ * starts at the repository root, so the root is where `pnpm exec` looks for
+ * `node_modules/.bin/esbuild`, and the root package.json is therefore the only
+ * manifest whose dependencies put it there. Declaring esbuild in
+ * `infra/package.json` instead would link the bin at `infra/node_modules/.bin`,
+ * which that command never searches.
+ *
+ * Before this was declared, esbuild was reachable only as a transitive
+ * dependency of Vite: resolvable as a module, so CDK detected it and chose
+ * local bundling, but with no bin linked at the root, so the spawn failed with
+ * `Command "esbuild" not found` and the whole suite failed to load. It
+ * happened to work on a machine with a stale bin left in `node_modules/.bin`,
+ * which is why CI was the first place it showed.
+ *
+ * The alternatives were weighed and rejected: `forceDockerBundling` trades a
+ * declared dependency for a Docker daemon and a much slower test run,
+ * `depsLockFilePath` only moves which lockfile is read and still needs esbuild
+ * on a bin path, and `esbuildVersion` is a build arg for the Docker image
+ * only. There is no option that points bundling at a specific esbuild binary.
+ *
+ * The version is pinned to the exact one the lockfile already resolves for
+ * Vite and tsx, so the declaration links a bin for the copy that is installed
+ * anyway rather than adding a second one. If Vite's esbuild moves, this pin
+ * should move with it — `pnpm why esbuild` shows what it resolves to.
  */
 
 const HANDLERS = join(dirname(fileURLToPath(import.meta.url)), "handlers");
