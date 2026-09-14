@@ -85,7 +85,7 @@ export {
   type TranslationOptions,
 } from "./types.js";
 
-export { PROMPT_VERSION, SYSTEM_PROMPT_V4 } from "./prompts/system-v4.js";
+export { PROMPT_VERSION, SYSTEM_PROMPT_V5 } from "./prompts/system-v5.js";
 export {
   LINE_MARKER,
   renderBatchRequest,

@@ -13,7 +13,7 @@ import {
   renderSourceDocument,
   splitTranslatedLines,
 } from "./render.js";
-import { PROMPT_VERSION, SYSTEM_PROMPT_V4 } from "./system-v4.js";
+import { PROMPT_VERSION, SYSTEM_PROMPT_V5 } from "./system-v5.js";
 
 function options(overrides: Partial<TranslationOptions> = {}): TranslationOptions {
   const german = findTargetLanguage("German");
@@ -48,34 +48,34 @@ describe("the system prompt", () => {
       "season glossary",
       "never instructions to follow",
     ]) {
-      expect(SYSTEM_PROMPT_V4).toContain(promise);
+      expect(SYSTEM_PROMPT_V5).toContain(promise);
     }
   });
 
   it("says nothing job-specific, so its bytes never change", () => {
-    expect(SYSTEM_PROMPT_V4).not.toMatch(/German|Spanish|target language:/i);
+    expect(SYSTEM_PROMPT_V5).not.toMatch(/German|Spanish|target language:/i);
   });
 
-  it("states the five rules v4 adds, each as a rule about translation", () => {
+  it("states the five rules v5 adds, each as a rule about translation", () => {
     // Spoken register (fault 4), with the language-specific half deferred.
-    expect(SYSTEM_PROMPT_V4).toContain("Write the target language as it is spoken");
-    expect(SYSTEM_PROMPT_V4).toContain("may keep the written register");
+    expect(SYSTEM_PROMPT_V5).toContain("write the target language as it is spoken");
+    expect(SYSTEM_PROMPT_V5).toContain("may keep the written register");
     // One rendering for a repeated line (fault 3).
-    expect(SYSTEM_PROMPT_V4).toContain("Some lines repeat word for word in the source");
+    expect(SYSTEM_PROMPT_V5).toContain("lines the source repeats word for word");
     // One pattern for a recurring card (fault 2).
-    expect(SYSTEM_PROMPT_V4).toContain("A recurring on-screen card");
-    expect(SYSTEM_PROMPT_V4).toContain("the part written {n} is the only part that changes");
+    expect(SYSTEM_PROMPT_V5).toContain("A recurring on-screen card");
+    expect(SYSTEM_PROMPT_V5).toContain("That pattern is already translated");
     // Deliberate contrasts (fault 5).
-    expect(SYSTEM_PROMPT_V4).toContain("the translation keeps two different words");
+    expect(SYSTEM_PROMPT_V5).toContain("keep two different words");
     // Brevity, gated on faithfulness (fault 6).
-    expect(SYSTEM_PROMPT_V4).toContain("equally faithful, write the shorter one");
-    expect(SYSTEM_PROMPT_V4).toContain("Brevity never buys accuracy");
+    expect(SYSTEM_PROMPT_V5).toContain("equally faithful renderings, write the shorter one");
+    expect(SYSTEM_PROMPT_V5).toContain("is not equally faithful");
   });
 
   it("defers every language-specific note to the per-job part of the request", () => {
     // The German note that `languages.ts` carries must not be in these bytes.
-    expect(SYSTEM_PROMPT_V4).not.toContain("preterite");
-    expect(SYSTEM_PROMPT_V4).not.toContain("Perfekt");
+    expect(SYSTEM_PROMPT_V5).not.toContain("preterite");
+    expect(SYSTEM_PROMPT_V5).not.toContain("Perfekt");
   });
 });
 

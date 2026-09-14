@@ -357,7 +357,7 @@ describe("the report of spec section 3.5", () => {
     expect(report.lane).toBe("fast");
     expect(report.model).toBe("claude-sonnet-5");
     expect(report.effort).toBe("medium");
-    expect(report.promptVersion).toMatch(/@v4$/);
+    expect(report.promptVersion).toMatch(/@v5$/);
     expect(report.dialogueChars).toBe(source.document.dialogueChars);
     expect(report.priceCents).toBe(priceCents(source.document.dialogueChars, "fast"));
     expect(report.wallTimeMs).toBeGreaterThan(0);

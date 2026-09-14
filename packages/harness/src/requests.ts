@@ -1,6 +1,6 @@
 import type { HarnessConfig } from "./config.js";
 import type { CacheTtl, ModelRequest, PromptBlock } from "./model-client.js";
-import { PROMPT_VERSION, SYSTEM_PROMPT_V4 } from "./prompts/system-v4.js";
+import { PROMPT_VERSION, SYSTEM_PROMPT_V5 } from "./prompts/system-v5.js";
 import {
   renderBatchRequest,
   renderGlossaryRequest,
@@ -137,7 +137,7 @@ function base(context: RequestContext): {
     maxTokens: context.config.maxTokens,
     effort: context.config.effort,
     jobId: context.jobId,
-    system: [cachedBlock(SYSTEM_PROMPT_V4, cacheTtlFor(context))],
+    system: [cachedBlock(SYSTEM_PROMPT_V5, cacheTtlFor(context))],
   };
 }
 

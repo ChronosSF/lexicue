@@ -132,9 +132,18 @@ function renderRepeatedLines(repeated: readonly RepeatedLine[]): string[] {
   return parts;
 }
 
-/** What both glossary passes ask for about recurring on-screen cards. */
+/**
+ * What both glossary passes ask for about recurring on-screen cards.
+ *
+ * The insistence that the target pattern be fully translated is measured: the
+ * run of 14 September 2026 answered "SKERRY POINT - EPISODE ONE" for episode one
+ * against "EPISODE ZWEI" and "EPISODE DREI" for the others. One shape, which is
+ * what this asks for, but with the first card's noun and numeral left in
+ * English — so the shape rule alone bought a consistent card in the wrong
+ * language.
+ */
 const CARD_REQUEST =
-  "Under cardPatterns, give every recurring on-screen card — title cards, episode cards, chapter cards, end cards — as one pattern, writing the part that changes from one card to the next as {n} on both sides. One pattern covers the whole set: a card that reads differently in a later file is the fault this exists to prevent.";
+  "Under cardPatterns, give every recurring on-screen card — title cards, episode cards, chapter cards, end cards — as one pattern, writing the part that changes from one card to the next as {n} on both sides. Write the target pattern fully in the target language: translate the whole card, the word for 'episode' or 'chapter' included, not only the number. One pattern covers the whole set.";
 
 /** The one glossary call per file (spec section 4.4). */
 export function renderGlossaryRequest(
