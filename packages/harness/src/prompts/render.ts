@@ -1,3 +1,4 @@
+import type { RepeatedLine } from "../repeats.js";
 import type { FileGlossary, SeasonGlossary } from "../schemas.js";
 import type { ProtocolCue, TranslationOptions } from "../types.js";
 
@@ -31,9 +32,21 @@ export function renderSourceDocument(cues: readonly ProtocolCue[]): string {
   return cues.map(renderCueLine).join("\n");
 }
 
-/** The job's fixed instructions, repeated after the cached prefix. */
+/**
+ * The job's fixed instructions, repeated after the cached prefix.
+ *
+ * Everything here is per-job by construction — the target language and its
+ * spoken-register notes among it — which is why it is rendered after the last
+ * cache breakpoint and never into the system prompt (spec sections 4.7, 4.8).
+ * Two targets share the prefix bytes exactly; only this block differs.
+ */
 export function renderJobHeader(options: TranslationOptions): string {
   const lines = [`Target language: ${options.target.name}.`];
+  const registerNotes = options.target.spokenRegisterNotes ?? [];
+  if (registerNotes.length > 0) {
+    lines.push(`The spoken register of ${options.target.name}:`);
+    for (const note of registerNotes) lines.push(`- ${note}`);
+  }
   if (options.formality === "auto") {
     lines.push(
       "Register: infer it from the dialogue, and keep whatever you infer consistent for the whole file.",
@@ -78,6 +91,18 @@ export function renderGlossary(glossary: FileGlossary, label = "Glossary"): stri
       parts.push(`  - ${term.source} -> ${term.target}${note}`);
     }
   }
+  if (glossary.repeatedLines.length > 0) {
+    parts.push("- Repeated lines, each with the one rendering to use at every occurrence:");
+    for (const line of glossary.repeatedLines) {
+      parts.push(`  - ${line.source} -> ${line.target}`);
+    }
+  }
+  if (glossary.cardPatterns.length > 0) {
+    parts.push("- Recurring on-screen cards; only the part written {n} changes:");
+    for (const card of glossary.cardPatterns) {
+      parts.push(`  - ${card.source} -> ${card.target}`);
+    }
+  }
   if (glossary.styleNotes.length > 0) {
     parts.push("- Style notes:");
     for (const note of glossary.styleNotes) parts.push(`  - ${note}`);
@@ -85,10 +110,37 @@ export function renderGlossary(glossary: FileGlossary, label = "Glossary"): stri
   return parts.join("\n");
 }
 
+/**
+ * The repeated lines the harness found, listed for the glossary pass to fix a
+ * rendering for. They are given rather than asked for because finding them is
+ * deterministic (`repeats.ts`) and a model asked to find its own would miss the
+ * ones that matter most: the lines whose occurrences fall in different batches.
+ */
+function renderRepeatedLines(repeated: readonly RepeatedLine[]): string[] {
+  if (repeated.length === 0) return [];
+  const opening =
+    repeated.length === 1
+      ? "This line occurs more than once in the source, word for word. Fix exactly one rendering for it"
+      : `These ${repeated.length.toString()} lines occur more than once in the source, word for word. Fix exactly one rendering for each`;
+  const parts = [
+    "",
+    `${opening}, and return them under repeatedLines with the source text copied unchanged:`,
+  ];
+  for (const line of repeated) {
+    parts.push(`- (${line.occurrences.toString()}x) ${line.text}`);
+  }
+  return parts;
+}
+
+/** What both glossary passes ask for about recurring on-screen cards. */
+const CARD_REQUEST =
+  "Under cardPatterns, give every recurring on-screen card — title cards, episode cards, chapter cards, end cards — as one pattern, writing the part that changes from one card to the next as {n} on both sides. One pattern covers the whole set: a card that reads differently in a later file is the fault this exists to prevent.";
+
 /** The one glossary call per file (spec section 4.4). */
 export function renderGlossaryRequest(
   options: TranslationOptions,
   seasonGlossary: SeasonGlossary | null,
+  repeatedLines: readonly RepeatedLine[] = [],
 ): string {
   const parts = [
     "Read the whole file above and produce the style sheet for translating it.",
@@ -96,6 +148,9 @@ export function renderGlossaryRequest(
     renderJobHeader(options),
     "",
     "Return: the detected source language, the register of the dialogue, every character whose name appears with how that name should be written in the target language, every recurring term or piece of invented vocabulary with one fixed translation, and any style notes a translator would need (running jokes, verbal tics, how formal the film is).",
+    CARD_REQUEST,
+    ...renderRepeatedLines(repeatedLines),
+    "",
     "Do not translate any cue yet.",
   ];
   if (seasonGlossary !== null) {
@@ -110,13 +165,19 @@ export function renderGlossaryRequest(
 }
 
 /** The one call per upload that produces the shared season glossary. */
-export function renderSeasonGlossaryRequest(options: TranslationOptions): string {
+export function renderSeasonGlossaryRequest(
+  options: TranslationOptions,
+  repeatedLines: readonly RepeatedLine[] = [],
+): string {
   return [
     "Above is a sample of every file in one upload: a season, or a set of related files. Produce the shared style sheet that every file will be translated against.",
     "",
     renderJobHeader(options),
     "",
     "Return: the source language, the register the whole set shares, every recurring character with how the name should be written in the target language, every recurring term with one fixed translation, and the style notes that must hold from the first file to the last (running jokes, catchphrases, forms of address between characters).",
+    CARD_REQUEST,
+    ...renderRepeatedLines(repeatedLines),
+    "",
     "Prefer decisions that will still be right in a later episode you have not seen. Do not translate any cue.",
   ].join("\n");
 }

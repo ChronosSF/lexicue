@@ -4,6 +4,7 @@ import type { Lane } from "@lexicue/pricing";
 import { serialiseSubtitleDocument } from "@lexicue/subtitles";
 import {
   PROMPT_VERSION,
+  emptyGlossary,
   findTargetLanguage,
   renderGlossary,
   resolveConfig,
@@ -22,7 +23,14 @@ import {
   type ConsistencyEpisode,
   type JudgeResult,
 } from "./judge.js";
-import { hardMetricsPassed, measureFile, previewPrice, type FileMetrics } from "./metrics.js";
+import {
+  hardMetricsPassed,
+  measureFile,
+  measureRepeatedLinesAcross,
+  previewPrice,
+  type FileMetrics,
+  type RepeatedLineConsistency,
+} from "./metrics.js";
 import { RUBRIC_VERSION } from "./rubric.js";
 
 export interface EvalRunOptions {
@@ -61,6 +69,12 @@ export interface EvalRunResult {
     target: string;
     consistent: boolean;
     findings: string[];
+    /**
+     * Lines the season repeats across its episodes, and how they came back.
+     * Advisory, so it never moves `consistent` (spec section 10.4 keeps the
+     * cross-episode check on names and forms of address).
+     */
+    repeatedLines: RepeatedLineConsistency[];
   }[];
   hardMetricsPassed: boolean;
   totals: {
@@ -178,15 +192,7 @@ export async function runEval(options: EvalRunOptions): Promise<EvalRunResult> {
             : await judgeSeasonConsistency(options.client, {
                 episodes,
                 targetLanguage: target.name,
-                glossary: renderGlossary(
-                  upload.seasonGlossary ?? {
-                    sourceLanguage: "",
-                    register: "mixed",
-                    characters: [],
-                    terms: [],
-                    styleNotes: [],
-                  },
-                ),
+                glossary: renderGlossary(upload.seasonGlossary ?? emptyGlossary()),
               });
         addUsage(usage, judged.usage);
         seasons.push({
@@ -194,6 +200,12 @@ export async function runEval(options: EvalRunOptions): Promise<EvalRunResult> {
           target: code,
           consistent: structural.consistent && judged.result.consistent,
           findings: [...structural.findings, ...judged.result.findings],
+          repeatedLines: measureRepeatedLinesAcross(
+            upload.files.flatMap((file, index) => {
+              const source = group[index]?.job.document;
+              return source === undefined ? [] : [{ source, output: file.document }];
+            }),
+          ),
         });
       }
     }
@@ -271,12 +283,43 @@ export function summarise(result: EvalRunResult): string {
       for (const finding of season.findings) lines.push(`  - ${finding}`);
     }
   }
+  lines.push(...summariseRepeatedLines(result));
   const failures = result.files.flatMap((file) => file.metrics.hard.failures);
   if (failures.length > 0) {
     lines.push("", "## Hard metric failures", "");
     for (const failure of failures) lines.push(`- ${failure}`);
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The repeated-line advisory, which is the measurement of what the v4 glossary
+ * is for. It says nothing when the corpus repeats nothing, so a reviewer can
+ * tell "no drift" apart from "nothing to drift".
+ */
+function summariseRepeatedLines(result: EvalRunResult): string[] {
+  const groups = [
+    ...result.files.flatMap((file) =>
+      file.metrics.advisory.repeatedLines.map((line) => ({ where: file.metrics.file, line })),
+    ),
+    ...result.seasons.flatMap((season) =>
+      season.repeatedLines.map((line) => ({ where: `${season.season} (across episodes)`, line })),
+    ),
+  ];
+  if (groups.length === 0) return [];
+  const drifted = groups.filter((group) => !group.line.consistent);
+  const lines = [
+    "",
+    "## Repeated lines",
+    "",
+    `- ${groups.length.toString()} repeated lines measured, ${drifted.length.toString()} rendered more than one way`,
+  ];
+  for (const { where, line } of drifted) {
+    lines.push(
+      `- **${where}**: "${line.source}" (${line.occurrences.toString()}x) came back as ${line.renderings.map((rendering) => `"${rendering}"`).join(" and ")}`,
+    );
+  }
+  return lines;
 }
 
 function tick(passed: boolean): string {

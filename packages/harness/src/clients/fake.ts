@@ -1,6 +1,6 @@
 import { splitMarkup } from "@lexicue/subtitles";
 import { LINE_MARKER } from "../prompts/render.js";
-import type { BatchTranslation, Character, FileGlossary, Term } from "../schemas.js";
+import type { BatchTranslation, CardPattern, Character, FileGlossary, Term } from "../schemas.js";
 import type {
   BatchModelClient,
   BatchRequestItem,
@@ -34,6 +34,8 @@ export interface FakeClientOptions {
   charactersFromSource?: (sourceText: string) => Character[];
   /** Terms the fake glossary reports. */
   glossaryTerms?: Term[];
+  /** Card patterns the fake glossary reports; the season fixture uses them. */
+  glossaryCardPatterns?: CardPattern[];
   /** The source language the fake glossary claims to have detected. */
   sourceLanguage?: string;
 }
@@ -52,6 +54,7 @@ export class FakeTranslationModelClient implements BatchModelClient {
   private readonly characters: Character[];
   private readonly charactersFromSource: ((sourceText: string) => Character[]) | null;
   private readonly terms: Term[];
+  private readonly cardPatterns: CardPattern[];
   private readonly seenCacheKeys = new Set<string>();
   private readonly schemaIds = new WeakMap<object, string>();
   private schemaCounter = 0;
@@ -66,6 +69,7 @@ export class FakeTranslationModelClient implements BatchModelClient {
     this.characters = options.glossaryCharacters ?? [];
     this.charactersFromSource = options.charactersFromSource ?? null;
     this.terms = options.glossaryTerms ?? [];
+    this.cardPatterns = options.glossaryCardPatterns ?? [];
   }
 
   complete<T>(request: ModelRequest<T>): Promise<ModelResponse<T>> {
@@ -164,6 +168,16 @@ export class FakeTranslationModelClient implements BatchModelClient {
           ? this.characters
           : [...this.characters, ...this.charactersFromSource(sourceText)],
       terms: this.terms,
+      // The API enforces the schema, so a real glossary pass always answers
+      // these two fields. The fake fixes each repeated line to its own
+      // transform of that line, which is exactly what the batches will produce
+      // for those cues: an offline test can then assert that the rendering the
+      // glossary fixed is the rendering that comes back.
+      repeatedLines: repeatedLinesIn(request).map((source) => ({
+        source,
+        target: this.translateLine(source),
+      })),
+      cardPatterns: this.cardPatterns,
       styleNotes: [`Fake client wraps dialogue in ${this.open}${this.close}`],
     };
     return glossary as T;
@@ -236,6 +250,23 @@ function lastCacheTtl<T>(request: ModelRequest<T>): string {
     if (block.cacheControl !== undefined) ttl = block.cacheControl.ttl;
   }
   return ttl;
+}
+
+/**
+ * Reads the repeated lines back out of a rendered glossary request, the way a
+ * model reads them: from the text of the request and nothing else. The harness
+ * detected them, so a fake that took them from anywhere but the prompt would
+ * hide a prompt that failed to carry them.
+ */
+export function repeatedLinesIn<T>(request: ModelRequest<T>): string[] {
+  const body = request.user.at(-1)?.text ?? "";
+  const found: string[] = [];
+  for (const line of body.split("\n")) {
+    const match = /^- \(\d+x\) (?<text>.+)$/u.exec(line);
+    const text = match?.groups?.["text"];
+    if (text !== undefined) found.push(text);
+  }
+  return found;
 }
 
 /** Reads the ids and cue texts back out of a rendered batch request. */

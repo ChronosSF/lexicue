@@ -2,7 +2,11 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_HARNESS_CONFIG } from "@lexicue/harness";
+import {
+  DEFAULT_HARNESS_CONFIG,
+  findRepeatedLines,
+  findRepeatedLinesAcross,
+} from "@lexicue/harness";
 import { priceFile } from "@lexicue/pricing";
 import { parseSubtitleText } from "@lexicue/subtitles";
 import {
@@ -14,7 +18,7 @@ import {
 } from "./corpus.js";
 import { FakeJudgeModelClient } from "./fake-judge.js";
 import { checkNameConsistency, judgeFile, renderJudgeRequest, stratifiedSample } from "./judge.js";
-import { hardMetricsPassed, measureFile, previewPrice } from "./metrics.js";
+import { hardMetricsPassed, measureFile, measureRepeatedLines, previewPrice } from "./metrics.js";
 import { JUDGE_RUBRIC, RUBRIC_VERSION } from "./rubric.js";
 import { runEval, summarise, writeResults } from "./runner.js";
 
@@ -435,7 +439,7 @@ describe("the runner", () => {
     expect(result.totals.cues).toBeGreaterThan(300);
     expect(result.seasons).toHaveLength(1);
     expect(result.seasons[0]?.consistent).toBe(true);
-    expect(result.promptVersion).toMatch(/@v3$/);
+    expect(result.promptVersion).toMatch(/@v4$/);
     expect(result.rubricVersion).toBe(RUBRIC_VERSION);
     for (const file of result.files) expect(file.judge?.means?.accuracy).toBe(4);
   });
@@ -498,6 +502,8 @@ describe("the runner", () => {
               readingSpeedFlagsPerThousandCues: 0,
               longLineFlagsPerThousandCues: 0,
               repairs: 0,
+              repeatedLines: [],
+              inconsistentRepeatedLines: 0,
               wallTimeMs: 1,
               usage: {
                 inputTokens: 0,
@@ -537,5 +543,118 @@ describe("the runner", () => {
     expect(summary).toContain("Hard metrics: FAILED");
     expect(summary).toContain("**FAIL**");
     expect(summary).toContain("cue 4 lost its index or timing line");
+  });
+});
+
+/**
+ * The repeated-line advisory: the measurement of what the v4 glossary is for.
+ * It is advisory rather than hard, because a line rendered two ways is a
+ * quality fault and not a structural break.
+ */
+describe("repeated lines", () => {
+  const corpus = loadCorpus();
+  const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
+
+  it("finds the motifs the two full-length fixtures were written around", () => {
+    const expected = [
+      { path: "drama/the-signal-box.srt", line: "The line doesn't care.", times: 9 },
+      { path: "comedy/the-inventory.srt", line: "Count it twice, say it once.", times: 15 },
+    ];
+    for (const { path, line, times } of expected) {
+      const cues = byPath.get(path)?.job.document.cues ?? [];
+      const found = findRepeatedLines(cues.map((cue) => ({ id: cue.id, lines: cue.lines })));
+      const motif = found.find((group) => group.text === line);
+      expect(motif?.occurrences).toBe(times);
+    }
+  });
+
+  /**
+   * The judged run of 14 September 2026 reported the season's log-book
+   * instruction as a drifting catchphrase. It is not one: episode one's source
+   * says "Write that in the log." and episode two's "Write it in the log.",
+   * which are different sentences that a faithful translation renders
+   * differently. The season has no verbatim repeat at all, so the fixed-
+   * rendering mechanism correctly leaves it alone — and this test is here so
+   * that a later change to the fixture does not silently change that.
+   */
+  it("finds no verbatim repeat across the season's episodes", () => {
+    const season = seasonEntries(corpus, "skerry-point");
+    expect(season).toHaveLength(3);
+    const found = findRepeatedLinesAcross(
+      season.map((entry) =>
+        entry.job.document.cues.map((cue) => ({ id: cue.id, lines: cue.lines })),
+      ),
+    );
+    expect(found).toEqual([]);
+    const sources = season.map((entry) =>
+      entry.job.document.cues.map((cue) => cue.lines.join(" ")).join("\n"),
+    );
+    expect(sources[0]).toContain("Write that in the log.");
+    expect(sources[1]).toContain("Write it in the log.");
+  });
+
+  it("reports a repeated line rendered one way as consistent", () => {
+    const source = parseSubtitleText(repeatingSrt(["A", "A"]));
+    const output = parseSubtitleText(repeatingSrt(["Ja, immer so.", "Ja, immer so."]));
+    const measured = measureRepeatedLines(source, output);
+    expect(measured).toHaveLength(1);
+    expect(measured[0]?.occurrences).toBe(2);
+    expect(measured[0]?.consistent).toBe(true);
+    expect(measured[0]?.renderings).toEqual(["Ja, immer so."]);
+  });
+
+  it("reports a repeated line rendered two ways as drift", () => {
+    const source = parseSubtitleText(repeatingSrt(["A", "A"]));
+    const output = parseSubtitleText(repeatingSrt(["Ja, immer so.", "Ja, immer noch."]));
+    const measured = measureRepeatedLines(source, output);
+    expect(measured[0]?.consistent).toBe(false);
+    expect(measured[0]?.renderings).toEqual(["Ja, immer noch.", "Ja, immer so."]);
+  });
+
+  function repeatingSrt(texts: string[]): string {
+    const blocks = texts.map((text, index) => {
+      const stamp = `00:00:0${(index + 1).toString()}`;
+      const line = text === "A" ? "The line doesn't care." : text;
+      return `${(index + 1).toString()}\n${stamp},000 --> ${stamp},900\n${line}\n`;
+    });
+    return blocks.join("\n") + "\n";
+  }
+});
+
+/**
+ * Tag preservation is a hard metric, so a repeated line whose occurrences carry
+ * different markup in the source *must* come back with different markup. The
+ * 400-cue fixture is exactly that case, and comparing rendered text with its
+ * tags reported the file's own motif as drift on a run that was perfect.
+ */
+describe("repeated lines and markup", () => {
+  it("compares the words, not the tags", () => {
+    const srt = (first: string, second: string): string =>
+      [
+        "1",
+        "00:00:01,000 --> 00:00:02,000",
+        first,
+        "",
+        "2",
+        "00:00:03,000 --> 00:00:04,000",
+        second,
+        "",
+        "",
+      ].join("\n");
+    const source = parseSubtitleText(
+      srt("<i>The line doesn't care.</i>", "The line doesn't care."),
+    );
+    const measured = measureRepeatedLines(
+      source,
+      parseSubtitleText(srt("<i>Der Strecke ist das egal.</i>", "Der Strecke ist das egal.")),
+    );
+    expect(measured[0]?.occurrences).toBe(2);
+    expect(measured[0]?.consistent).toBe(true);
+
+    const drifted = measureRepeatedLines(
+      source,
+      parseSubtitleText(srt("<i>Der Strecke ist das egal.</i>", "Die Strecke kümmert das nicht.")),
+    );
+    expect(drifted[0]?.consistent).toBe(false);
   });
 });

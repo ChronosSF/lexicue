@@ -1,12 +1,7 @@
 import type { ModelUsage, TranslationModelClient } from "./model-client.js";
+import type { RepeatedLine } from "./repeats.js";
 import { buildGlossaryRequest, type RequestContext } from "./requests.js";
-import {
-  emptyGlossary,
-  type Character,
-  type FileGlossary,
-  type SeasonGlossary,
-  type Term,
-} from "./schemas.js";
+import { emptyGlossary, type FileGlossary, type SeasonGlossary } from "./schemas.js";
 import { withTransportRetry } from "./transport.js";
 
 export interface GlossaryPassResult {
@@ -29,8 +24,9 @@ export async function runGlossaryPass(
   client: TranslationModelClient,
   context: RequestContext,
   seasonGlossary: SeasonGlossary | null,
+  repeatedLines: readonly RepeatedLine[] = [],
 ): Promise<GlossaryPassResult> {
-  const request = buildGlossaryRequest(context, seasonGlossary);
+  const request = buildGlossaryRequest(context, seasonGlossary, repeatedLines);
   const response = await withTransportRetry(client, context.config, () => client.complete(request));
   const parsed = response.parsed;
   if (parsed === null) {
@@ -66,6 +62,13 @@ export function mergeGlossaries(season: SeasonGlossary | null, file: FileGlossar
     register: season.register,
     characters: mergeBy(season.characters, file.characters, (character) => character.name),
     terms: mergeBy(season.terms, file.terms, (term) => term.source),
+    // A line the season fixed keeps the season's rendering in every episode,
+    // which is the whole point of fixing it; a line that repeats only inside
+    // this file is added.
+    repeatedLines: mergeBy(season.repeatedLines, file.repeatedLines, (line) => line.source),
+    // Same for a card: the season's pattern is what keeps episode one's title
+    // card the same shape as episode three's.
+    cardPatterns: mergeBy(season.cardPatterns, file.cardPatterns, (card) => card.source),
     styleNotes: [
       ...season.styleNotes,
       ...file.styleNotes.filter((note) => !season.styleNotes.includes(note)),
@@ -92,6 +95,22 @@ export function findContradictions(season: SeasonGlossary, file: FileGlossary): 
       );
     }
   }
+  for (const line of file.repeatedLines) {
+    const fixed = season.repeatedLines.find((entry) => sameKey(entry.source, line.source));
+    if (fixed !== undefined && fixed.target !== line.target) {
+      problems.push(
+        `the file glossary renders the repeated line "${line.source}" as "${line.target}" but the season glossary fixes "${fixed.target}"`,
+      );
+    }
+  }
+  for (const card of file.cardPatterns) {
+    const fixed = season.cardPatterns.find((entry) => sameKey(entry.source, card.source));
+    if (fixed !== undefined && fixed.target !== card.target) {
+      problems.push(
+        `the file glossary renders the card "${card.source}" as "${card.target}" but the season glossary fixes "${fixed.target}"`,
+      );
+    }
+  }
   if (file.register !== season.register) {
     problems.push(
       `the file glossary calls the register ${file.register} but the season glossary fixes ${season.register}`,
@@ -100,11 +119,7 @@ export function findContradictions(season: SeasonGlossary, file: FileGlossary): 
   return problems;
 }
 
-function mergeBy<T extends Character | Term>(
-  fixed: readonly T[],
-  extra: readonly T[],
-  key: (entry: T) => string,
-): T[] {
+function mergeBy<T>(fixed: readonly T[], extra: readonly T[], key: (entry: T) => string): T[] {
   const merged = [...fixed];
   const seen = new Set(fixed.map((entry) => key(entry).trim().toLowerCase()));
   for (const entry of extra) {

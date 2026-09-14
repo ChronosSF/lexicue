@@ -23,10 +23,13 @@ export {
 export {
   hardMetricsPassed,
   measureFile,
+  measureRepeatedLines,
+  measureRepeatedLinesAcross,
   previewPrice,
   type AdvisoryMetrics,
   type FileMetrics,
   type HardMetrics,
+  type RepeatedLineConsistency,
 } from "./metrics.js";
 export {
   AXES,

@@ -10,7 +10,7 @@ import {
   buildSourceDocument,
   type RequestContext,
 } from "../requests.js";
-import { emptyGlossary, type BatchTranslation } from "../schemas.js";
+import { FileGlossarySchema, emptyGlossary, type BatchTranslation } from "../schemas.js";
 import { toProtocolCue, type TranslationOptions } from "../types.js";
 import { FakeTranslationModelClient, cachedPrefix, estimateTokens } from "./fake.js";
 import { FaultInjectingModelClient } from "./fault.js";
@@ -262,5 +262,53 @@ describe("the fault-injecting client", () => {
     });
     await expect(client.complete(batchRequest())).rejects.toThrow(/429/);
     await expect(client.complete(batchRequest())).rejects.toThrow(/500/);
+  });
+});
+
+/**
+ * The API enforces the structured-output schema, so every field of the glossary
+ * comes back on a real call. A fake that answered a subset would let an offline
+ * test pass over a shape the API would have rejected.
+ */
+describe("the fake glossary answer", () => {
+  it("satisfies the schema the API would enforce", async () => {
+    const client = new FakeTranslationModelClient();
+    const response = await client.complete(
+      buildGlossaryRequest({ ...context(), sourceDocument: "1\tHello." }, null, [
+        { text: "The line doesn't care.", occurrences: 9, ids: [1, 2] },
+      ]),
+    );
+    expect(FileGlossarySchema.safeParse(response.parsed).success).toBe(true);
+  });
+
+  it("reads the repeated lines out of the prompt, as a model would", async () => {
+    const client = new FakeTranslationModelClient();
+    const response = await client.complete(
+      buildGlossaryRequest({ ...context(), sourceDocument: "1\tHello." }, null, [
+        { text: "The line doesn't care.", occurrences: 9, ids: [1, 2] },
+      ]),
+    );
+    expect(response.parsed?.repeatedLines).toEqual([
+      { source: "The line doesn't care.", target: "«The line doesn't care.»" },
+    ]);
+  });
+
+  it("fixes nothing when the prompt lists nothing", async () => {
+    const client = new FakeTranslationModelClient();
+    const response = await client.complete(
+      buildGlossaryRequest({ ...context(), sourceDocument: "1\tHello." }, null),
+    );
+    expect(response.parsed?.repeatedLines).toEqual([]);
+    expect(response.parsed?.cardPatterns).toEqual([]);
+  });
+
+  it("reports the card patterns it was configured with", async () => {
+    const client = new FakeTranslationModelClient({
+      glossaryCardPatterns: [{ source: "EPISODE {n}", target: "FOLGE {n}" }],
+    });
+    const response = await client.complete(
+      buildGlossaryRequest({ ...context(), sourceDocument: "1\tHello." }, null),
+    );
+    expect(response.parsed?.cardPatterns).toEqual([{ source: "EPISODE {n}", target: "FOLGE {n}" }]);
   });
 });

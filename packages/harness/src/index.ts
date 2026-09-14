@@ -38,19 +38,34 @@ export {
 
 export {
   BatchTranslationSchema,
+  CardPatternSchema,
   CharacterSchema,
   FileGlossarySchema,
   RegisterSchema,
+  RepeatedLineRenderingSchema,
   SeasonGlossarySchema,
   TermSchema,
   emptyGlossary,
   type BatchTranslation,
+  type CardPattern,
   type Character,
   type FileGlossary,
   type Register,
+  type RepeatedLineRendering,
   type SeasonGlossary,
   type Term,
 } from "./schemas.js";
+
+export {
+  REPEAT_LIMIT,
+  REPEAT_MIN_CHARS,
+  REPEAT_MIN_WORDS,
+  findRepeatedLines,
+  findRepeatedLinesAcross,
+  repeatKey,
+  type RepeatOptions,
+  type RepeatedLine,
+} from "./repeats.js";
 
 export {
   TARGET_LANGUAGES,
@@ -70,7 +85,7 @@ export {
   type TranslationOptions,
 } from "./types.js";
 
-export { PROMPT_VERSION, SYSTEM_PROMPT_V3 } from "./prompts/system-v3.js";
+export { PROMPT_VERSION, SYSTEM_PROMPT_V4 } from "./prompts/system-v4.js";
 export {
   LINE_MARKER,
   renderBatchRequest,
@@ -88,6 +103,7 @@ export {
   cachedPrefix,
   estimateTokens,
   parseBatchRequest,
+  repeatedLinesIn,
   type FakeClientOptions,
 } from "./clients/fake.js";
 export { AnthropicTranslationClient, type AnthropicClientOptions } from "./clients/anthropic.js";

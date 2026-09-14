@@ -357,7 +357,7 @@ describe("the report of spec section 3.5", () => {
     expect(report.lane).toBe("fast");
     expect(report.model).toBe("claude-sonnet-5");
     expect(report.effort).toBe("medium");
-    expect(report.promptVersion).toMatch(/@v3$/);
+    expect(report.promptVersion).toMatch(/@v4$/);
     expect(report.dialogueChars).toBe(source.document.dialogueChars);
     expect(report.priceCents).toBe(priceCents(source.document.dialogueChars, "fast"));
     expect(report.wallTimeMs).toBeGreaterThan(0);
@@ -785,5 +785,76 @@ describe("the cost model", () => {
   it("falls back to the Sonnet 5 rate card for an unknown model", () => {
     const usage = { ...emptyUsage(), outputTokens: 1_000_000 };
     expect(modelCostUsd(usage, "claude-something-new", "fast")).toBeCloseTo(10, 10);
+  });
+});
+
+/**
+ * The whole chain the v4 glossary adds, end to end against the fake client: a
+ * line the source repeats is found before any model call, the glossary pass
+ * fixes one rendering for it, and every batch that carries an occurrence is
+ * given that rendering. The file is laid out so the occurrences fall in
+ * different batches, which is the only arrangement where a fixed rendering can
+ * do anything the model could not have done on its own.
+ */
+describe("a line the source repeats", () => {
+  const repeated = "The line doesn't care.";
+
+  function repeatingFilm(): string {
+    const blocks: string[] = [];
+    for (let i = 1; i <= 8; i += 1) {
+      const stamp = `00:00:${i.toString().padStart(2, "0")}`;
+      const text = i % 3 === 1 ? repeated : `Scene ${i.toString()} carries on regardless.`;
+      blocks.push(`${i.toString()}\n${stamp},000 --> ${stamp},900\n${text}\n`);
+    }
+    return blocks.join("\n") + "\n";
+  }
+
+  it("fixes one rendering and gives it to every batch that needs it", async () => {
+    const client = new FakeTranslationModelClient();
+    const result = await translateFile({
+      client,
+      config: config({ batchSize: 2 }),
+      options: options(),
+      job: job(repeatingFilm(), "repeats.srt"),
+      now,
+    });
+
+    // The glossary pass was told which line repeats, and fixed a rendering.
+    const glossaryRequest = client.requests.find((request) => request.purpose === "glossary");
+    expect(glossaryRequest?.user.at(-1)?.text).toContain(`- (3x) ${repeated}`);
+    const fixed = result.glossary.repeatedLines.find((line) => line.source === repeated);
+    expect(fixed?.target).toBe(`«${repeated}»`);
+
+    // Every batch request carries that rendering, not just the ones that
+    // happen to contain an occurrence.
+    const batches = client.requests.filter((request) => request.purpose === "batch");
+    expect(batches).toHaveLength(4);
+    for (const batch of batches) {
+      expect(batch.user.at(-1)?.text).toContain(`${repeated} -> «${repeated}»`);
+    }
+
+    // And the occurrences, which fall in three different batches, came back
+    // identical.
+    const rendered = result.document.cues
+      .filter((cue) => [1, 4, 7].includes(cue.id))
+      .map((cue) => cue.lines.join(" "));
+    expect(rendered).toEqual([`«${repeated}»`, `«${repeated}»`, `«${repeated}»`]);
+  });
+
+  it("says nothing about repeats in a file that has none", async () => {
+    const client = new FakeTranslationModelClient();
+    const result = await translateFile({
+      client,
+      config: config(),
+      options: options(),
+      job: job(),
+      now,
+    });
+    expect(result.glossary.repeatedLines).toEqual([]);
+    const glossaryRequest = client.requests.find((request) => request.purpose === "glossary");
+    expect(glossaryRequest?.user.at(-1)?.text).not.toContain("word for word");
+    for (const batch of client.requests.filter((request) => request.purpose === "batch")) {
+      expect(batch.user.at(-1)?.text).not.toContain("Repeated lines");
+    }
   });
 });
