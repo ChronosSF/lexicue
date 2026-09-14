@@ -1,5 +1,8 @@
 node_modules/
 dist/
+dist-e2e/
+playwright-report/
+test-results/
 coverage/
 cdk.out/
 pnpm-lock.yaml

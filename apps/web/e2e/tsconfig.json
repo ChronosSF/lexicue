@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    // The suite runs in Node, next to a browser it drives, and it asserts on
+    // the downloaded file with the same parser the app bundles. Playwright
+    // reads these mappings too, which is what lets a spec import the package
+    // from source without a build step — exactly as Vite and Vitest do.
+    "paths": {
+      "@lexicue/subtitles": ["../../../packages/subtitles/src/index.ts"],
+      "@lexicue/pricing": ["../../../packages/pricing/src/index.ts"]
+    }
+  },
+  "include": [".", "../playwright.config.ts"]
+}

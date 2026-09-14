@@ -90,11 +90,17 @@ pnpm typecheck   # tsc -b across the workspace, then the app
 pnpm test        # 719 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
+pnpm e2e         # 9 Playwright tests through the app in a real browser
 ```
 
 Everything except `pnpm dev` is offline and takes under a minute in total. The
 tests never touch the network or the key: the local API is driven over real HTTP
-against the deterministic fake model client.
+against the deterministic fake model client. `pnpm e2e` needs a browser the
+first time, which is the one download in the list:
+
+```sh
+pnpm --filter web exec playwright install chromium
+```
 
 ## Running the command-line tool
 
@@ -838,6 +844,38 @@ reason. Section 7.4 lists `topup`, `grant`, `charge` and `refund`, and section
 that as a `refund` would put "Refund −$5.00" in a money list where `refund`
 means the opposite, so there is now a `reversal` reason and the wallet screen
 calls it "Payment reversed".
+
+## The end-to-end suite
+
+Specification section 10.3 asks for Playwright against staging after every
+deploy: sign in, upload a fixture, translate, download, verify the file and the
+charge. Nothing is deployed, so the subject is the mock backend — the whole
+product in the browser, no key, no network, no spend — and everything it
+exercises is real code: the parser, the price function, the wallet arithmetic,
+the refund and the harness's structural guarantee.
+
+```sh
+pnpm --filter web exec playwright install chromium   # once per machine
+pnpm e2e                                             # 9 tests, about 20 seconds
+pnpm --filter web e2e --headed                       # to watch it happen
+```
+
+`apps/web/playwright.config.ts` builds the mock app with `vite build --mode
+mock` and serves it with `vite preview` on port 4183, so the tests drive the
+production bundle that would ship rather than a dev server, on a port of their
+own: a `pnpm dev` already running on 5173 is never borrowed and never disturbed.
+The specs are `apps/web/e2e/*.e2e.ts`, they address the page by role and
+accessible name rather than by CSS class, and they assert on the downloaded
+bytes with `@lexicue/subtitles` — same cue count, every timing line identical to
+the source.
+
+The nine are: the section 10.3 smoke test; the automatic refund of a failed
+file; the top-up offered instead of a refusal, through the mock checkout; the
+economy lane, with its notice and its own download; three episodes at once and
+the "Download all" zip, unpacked and parsed file by file; a file that is not a
+subtitle file explaining itself in its row and being removed on its own; a
+dropped zip unpacked in the browser; the same-language refusal of section 3.3;
+and the demo's history and reset.
 
 ## Continuous integration
 

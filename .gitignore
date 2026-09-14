@@ -1,5 +1,10 @@
 node_modules/
 dist/
+# The mock build the end-to-end suite serves, and what Playwright writes: the
+# HTML report, traces and screenshots of a failed run.
+dist-e2e/
+playwright-report/
+test-results/
 coverage/
 cdk.out/
 *.tsbuildinfo

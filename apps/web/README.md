@@ -288,3 +288,47 @@ intake, the wording of the confirm button, the batch screen's deletion notice,
 one test that clicks the whole flow from a sample file to a downloaded
 translation, and one that builds the app for production and asserts the bundle
 carries no development-only route and no API key.
+
+## The end-to-end suite
+
+The same flows through a real browser, against this mock: specification section
+10.3's smoke test as code rather than as somebody's clicks.
+
+```sh
+pnpm --filter web exec playwright install chromium   # once per machine
+pnpm --filter web e2e                                # 9 tests, about 20 seconds
+pnpm --filter web e2e --headed                       # to watch it happen
+pnpm --filter web e2e --ui                           # to pick one apart
+```
+
+The specs are `e2e/*.e2e.ts` — a suffix of their own, so neither Vitest project
+picks them up — and they are typed by `e2e/tsconfig.json`, which `pnpm typecheck`
+checks alongside the app.
+
+`playwright.config.ts` builds this app with `vite build --mode mock` and serves
+the result with `vite preview` on **port 4183**, its own and nobody else's:
+`strictPort` and `reuseExistingServer: false` mean the suite serves the build it
+just made, and a `pnpm dev` on 5173 or a local API on 5174 is neither borrowed
+nor disturbed. A production build rather than the dev server, because the mock
+is chosen at build time, so testing the bundle that would ship costs one extra
+second.
+
+Each test signs in as its own address and gets its own browser context, so its
+own `localStorage` and its own demo state; they run in parallel and share only a
+static file server. They address the page by role and accessible name — no CSS
+class appears in the suite — and they assert on the bytes the browser actually
+saved, parsed with `@lexicue/subtitles`: same cue count, every timing line
+identical to the source, the byte-order mark where the options say it should be,
+and the wallet down by exactly the price the table previewed.
+
+What they cover, in order of the "what to click" list above: the sample tray and
+the preview table, including a dropped zip unpacked in the browser and a file
+that is not a subtitle file explaining itself in its own row and being removed
+without discarding the rest; the
+language and lane choices and the confirm button's arithmetic; `fail.srt`'s
+automatic refund and the ledger entry behind it; a balance too short, which
+offers a top-up and credits it through the mock checkout; the economy lane's
+notice and its file coming back intact; all three Skerry Point episodes at once,
+their shared season glossary, and the "Download all" zip, unpacked and parsed
+file by file; the same-language refusal of section 3.3; and the history and
+"Reset the demo".

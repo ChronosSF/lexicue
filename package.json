@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "e2e": "pnpm --filter web e2e",
     "harness": "tsx packages/cli/src/bin.ts",
     "evals": "tsx evals/src/bin.ts"
   },

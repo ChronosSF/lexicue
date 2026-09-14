@@ -8,8 +8,12 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
+      "**/dist-e2e/**",
       "**/coverage/**",
       "**/node_modules/**",
+      // Playwright's own output: the HTML report, traces and screenshots.
+      "**/playwright-report/**",
+      "**/test-results/**",
       "evals/results/**",
       // Scratch space for local runs: outputs, reports and one-off diagnostics,
       // none of it part of the project (see .gitignore).
@@ -135,6 +139,19 @@ export default tseslint.config(
   },
   {
     files: ["**/*.test.ts", "**/*.test.tsx", "evals/src/**/*.ts", "packages/cli/src/**/*.ts"],
+    languageOptions: { globals: { ...globals.node } },
+    rules: {
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "no-restricted-imports": "off",
+      "no-restricted-globals": "off",
+    },
+  },
+  {
+    // The end-to-end suite. It is Node code that drives a browser: Node globals
+    // are its job, it reads the sample corpus off disk, and it imports the
+    // parser to check what came back. `apps/web/e2e/tsconfig.json` is the
+    // project that types it, for this rule set and for `pnpm typecheck` alike.
+    files: ["apps/web/e2e/**/*.ts"],
     languageOptions: { globals: { ...globals.node } },
     rules: {
       "@typescript-eslint/explicit-module-boundary-types": "off",
