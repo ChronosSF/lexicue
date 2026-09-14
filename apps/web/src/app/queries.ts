@@ -15,6 +15,7 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { useBackend } from "./backend.js";
 import type { Session } from "../backend/types.js";
 
@@ -64,10 +65,23 @@ export function useLanguages(): UseQueryResult<LanguagesResponse> {
   });
 }
 
-/** Polls while anything in the batch can still change, and then stops. */
+/**
+ * Polls while anything in the batch can still change, and then stops.
+ *
+ * Money moves twice in a batch's life. The charge is taken when the batch is
+ * created, and `useCreateBatch` refreshes the wallet for it. The refund of a
+ * file that fails (spec section 2.3) lands inside the backend while this
+ * screen is only polling the batch, and the header's balance is a query of its
+ * own: the row would say the file was refunded while the pill still showed the
+ * charge. So a poll that shows a refund landing, or the batch closing,
+ * invalidates the wallet and the history list — the header asks again, and the
+ * history row is fresh when it is next opened. That is one request per event,
+ * not a second poll.
+ */
 export function useBatch(batchId: string | null): UseQueryResult<Batch> {
   const backend = useBackend();
-  return useQuery({
+  const client = useQueryClient();
+  const result = useQuery({
     queryKey: keys.batch(batchId ?? "none"),
     queryFn: async () => (await backend.getBatch(batchId ?? "")).batch,
     enabled: batchId !== null,
@@ -77,6 +91,24 @@ export function useBatch(batchId: string | null): UseQueryResult<Batch> {
       return isBatchRunning(batch) ? batch.pollAfterMs : false;
     },
   });
+
+  // The last snapshot seen, so a change is judged between two polls rather than
+  // read off a state: a batch opened from the history, closed and refunded long
+  // ago, has nothing new to tell the wallet.
+  const batch = result.data;
+  const seen = useRef<Batch | undefined>(undefined);
+  useEffect(() => {
+    const previous = seen.current;
+    seen.current = batch;
+    if (batch === undefined || previous?.batchId !== batch.batchId) return;
+    const refunded = batch.refundedCents > previous.refundedCents;
+    const closed = isBatchRunning(previous) && !isBatchRunning(batch);
+    if (!refunded && !closed) return;
+    void client.invalidateQueries({ queryKey: keys.me });
+    void client.invalidateQueries({ queryKey: keys.batches });
+  }, [batch, client]);
+
+  return result;
 }
 
 export function useHistory(enabled = true): UseQueryResult<BatchSummary[]> {

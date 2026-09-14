@@ -47,11 +47,9 @@ test("refunds a file that fails, says so in its row and leaves the balance where
   await expect(charged).toContainText("refunded for 1 file that failed");
   expect(allCentsIn(await charged.textContent())).toEqual([0, previewedCents]);
 
-  // The balance is where it started. The header holds the charged number until
-  // something asks the wallet again — the refund lands while the batch screen
-  // is only polling the batch — so this reloads, which is what a user who came
-  // back to the page would see.
-  await page.reload();
+  // The balance is where it started, and the header says so on this screen,
+  // without a reload: the refund lands while the batch screen is only polling
+  // the batch, and the poll that shows it is what asks the wallet again.
   await expectBalanceCents(page, FREE_BALANCE_CENTS);
 
   // And the ledger of section 2.2 shows both halves of it.
