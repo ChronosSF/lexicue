@@ -108,6 +108,12 @@ it says nothing at all about translation quality.
 - Tag preservation: the same multiset of inline tags and control codes per cue.
 - Coverage: every cue of the input is a cue of the output.
 - The price charged equals the price a preview would have shown from the source.
+- Every fixture prices exactly as `corpus/manifest.json` records it, on both
+  lanes, under the default rate table: $2.45 for the corpus on the fast lane,
+  which is what every measured run has charged. The manifest carries each file's
+  cue count, character count and expected price, so a change to the parser, the
+  price function or the rate table has to change that file too — nothing may
+  move a published price by accident.
 
 **Advisory metrics**
 
@@ -196,10 +202,26 @@ visible in review. A measurement run that is not a regression check belongs in
 `.local/` instead, which is git-ignored: the three judged prompt runs and both
 arms of the effort sweep are there, named in the root `README.md`.
 
+## What the corpus costs, and what it earns
+
+The per-file model cost, the margin at today's rates, and three concrete rate
+tables the founder could move to are in the root `README.md`, under **"What the
+measurements say about the price"**. The short version: cost tracks cues more
+closely than characters, the price meters characters only, and the two
+full-length fixtures therefore return 28.1% and 32.6% margin where the
+specification's own film shape returns 50.8%. `packages/pricing` can now express
+a per-cue component and a per-lane floor; both defaults are today's published
+numbers, so nothing has changed yet.
+
 ## Still to do
 
 - The rest of the breadth section 10.4 asks for: about twenty files, and one at
   the 2,600-cue end. Two full-length fixtures now exist; see **Scale** above.
+- **A full-length fixture at 43 characters per cue**, which is what
+  specification section 5.3 models the price on. The two that exist sit at 33.3
+  and 31.2, too close to separate the per-cue and per-character parts of the
+  cost. One run costs about 25 cents and is what the pricing recommendation in
+  the root `README.md` waits on.
 - The blind pairwise preference test against the cheap tools of specification
   section 6.7, which decides whether the fast lane keeps its premium. It needs
   native speakers, not code.

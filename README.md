@@ -87,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 719 tests, in two Vitest projects: the packages and the app
+pnpm test        # 742 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 pnpm e2e         # 9 Playwright tests through the app in a real browser
@@ -677,6 +677,119 @@ figure assumes it reads every file whole, which `renderJudgeRequest` does.
 **`pnpm evals run` without `--fake` costs this much and needs the founder's
 approval.** Nobody has run it.
 
+### What the measurements say about the price, as at 14 September 2026
+
+**A decision for the founder. No price has moved.** `packages/pricing` can now
+express a per-cue component and a per-lane floor, and both defaults are today's
+published numbers, so every price in the product is unchanged to the cent
+(`evals/src/evals.test.ts` prices all thirteen fixtures against the manifest).
+This section is the case for changing them.
+
+Model cost below is the 14 September v3 corpus run into German, Sonnet 5 at
+effort `medium`, fast lane; the economy figures are the two real economy runs.
+Card fee is the $10 top-up's 5.9% share and AWS is $0.02 to $0.03 a file, both
+as specification section 6.4 assumes. Economy cost is measured for the season
+and the signal box; for the other shapes it is that file's fast cost times the
+**43.5%** the signal box measured on both lanes, which is marked where it is
+used.
+
+#### Cost follows cues; the price follows characters
+
+| Shape                            |  Cues |  Chars | Chars/cue | Model cost | Per 1,000 chars |   Per cue |
+| -------------------------------- | ----: | -----: | --------: | ---------: | --------------: | --------: |
+| `comedy/the-lamp-room.srt`       |    38 |  1,062 |      27.9 |    $0.0314 |         $0.0295 | $0.000826 |
+| `season/*.srt`, 3 episodes       |    81 |  2,096 |      25.9 |    $0.0925 |         $0.0442 | $0.001142 |
+| `drama/the-signal-box.srt`       |   400 | 13,339 |      33.3 |    $0.2406 |         $0.0180 | $0.000601 |
+| `comedy/the-inventory.srt`       | 1,000 | 31,241 |      31.2 |    $0.5480 |         $0.0175 | $0.000548 |
+| Section 5.3's film, **modelled** | 1,400 | 60,000 |      42.9 |    $0.7500 |         $0.0125 | $0.000536 |
+
+Against the model the price was built on, `the-signal-box.srt` costs **44% more
+per 1,000 characters but 12% more per cue**, and `the-inventory.srt` **40% more
+per 1,000 characters but 2% more per cue**. That is the whole argument: the JSON envelope, the id and the per-cue overhead are the
+same size whether a cue holds four words or fourteen, so a dense file costs more
+to produce per character and earns less.
+
+**The caveat that decides how far to go.** The sparse end of that table is a
+model, not a measurement. Nobody has translated a file at section 5.3's own 43
+characters per cue; the two measured full-length files sit at 33.3 and 31.2, too
+close to separate the per-cue and per-character components by regression. One
+run of a 43-characters-per-cue fixture costs about 25 cents and turns this
+argument from two measured points plus a model into three measured points.
+
+#### Margin at today's rates, per measured shape
+
+| Shape                        | Lane    | Price | Card fee |   Model |   AWS |  Gross |    Margin |
+| ---------------------------- | ------- | ----: | -------: | ------: | ----: | -----: | --------: |
+| `the-lamp-room.srt`          | fast    | $0.10 |   $0.006 | $0.0314 | $0.02 | $0.043 |     42.7% |
+| `season/*.srt`, 3 episodes   | fast    | $0.30 |   $0.018 | $0.0925 | $0.06 | $0.130 |     43.3% |
+| `season/*.srt`, 3 episodes   | economy | $0.30 |   $0.018 | $0.0263 | $0.06 | $0.196 | **65.3%** |
+| `the-signal-box.srt`         | fast    | $0.41 |   $0.024 | $0.2406 | $0.03 | $0.115 | **28.1%** |
+| `the-signal-box.srt`         | economy | $0.27 |   $0.016 | $0.1061 | $0.03 | $0.118 |     43.7% |
+| `the-inventory.srt`          | fast    | $0.94 |   $0.055 | $0.5480 | $0.03 | $0.307 | **32.6%** |
+| Section 5.3's film, modelled | fast    | $1.80 |   $0.106 | $0.7500 | $0.03 | $0.914 |     50.8% |
+
+**Today's price under-earns on dense, short-cue files, and that is the only
+place it under-earns.** Section 6.4 promises 45 to 48% blended and 51% on the
+film. The two measured full-length files return **28.1%** and **32.6%** — 22.7
+and 18.2 points short of the film's margin on the same rate card. In money, to
+earn what the film earns, `the-signal-box.srt` would have to be priced at 62
+cents rather than 41 (**+52%**) and `the-inventory.srt` at $1.33 rather than
+$0.94 (**+42%**); the gross left on the table is 20.2 and 37.1 cents a file. The
+small end is fine: the 10-cent floor holds the lamp room at 42.7% and the season
+at 43.3%, which is the band section 6.4 designed for.
+
+**The economy lane is the opposite problem.** `drama/the-signal-box.srt` is the
+one file run on both lanes: $0.2439 fast against $0.1061 economy, so economy
+costs **43.5% of fast** where section 5.3 models 77%. Priced at two thirds of
+fast, the cheaper lane earns a better margin than the expensive one on the same
+file — 43.7% against 28.1%. (The season's economy run came in at 30.5% of fast,
+but its output-token count is confounded; the signal box is the number to use.)
+
+#### Three alternatives
+
+Rates are written `chars-per-1,000 / cents-per-100-cues / floor`.
+
+**A. A per-cue component, sized to leave the film where it is.** Fast
+`1 / 8 / 10`, economy `1 / 4 / 10`.
+
+| Shape                      |    Fast today |      Fast under A | Economy today | Economy under A |
+| -------------------------- | ------------: | ----------------: | ------------: | --------------: |
+| `the-lamp-room.srt`        | $0.10 · 42.7% |     $0.10 · 42.7% | $0.10 · 60.5% |   $0.10 · 60.5% |
+| `season/*.srt`, 3 episodes | $0.30 · 43.3% |     $0.30 · 43.3% | $0.30 · 65.3% |   $0.30 · 65.3% |
+| `the-signal-box.srt`       | $0.41 · 28.1% | **$0.46 · 35.3%** | $0.27 · 43.7% |   $0.30 · 48.7% |
+| `the-inventory.srt`        | $0.94 · 32.6% | **$1.12 · 42.5%** | $0.63 · 51.5% |   $0.72 · 56.8% |
+| Section 5.3's film         | $1.80 · 50.8% |     $1.72 · 48.8% | $1.20 · 64.4% |   $1.16 · 63.4% |
+
+Every file at the floor is unchanged, the headline film gets 8 cents _cheaper_,
+and the two shapes that under-earn gain 7.2 and 9.9 points.
+
+**B. A higher floor.** Fast `3 / 0 / 20`, economy `2 / 0 / 15`. It doubles the
+price of every small file — the lamp room $0.10 to $0.20 at 68.4%, the season
+$0.30 to $0.60 — and does **nothing at all** for the two shapes that under-earn,
+which are already far above any plausible floor. It solves a problem the
+measurements did not find.
+
+**C. A wider economy discount, funded by the measured 43.5%.** Fast unchanged,
+economy `1 / 3 / 10`. The film's economy price falls from $1.20 to $1.02 (−15%)
+and still returns 59.2%; the signal box goes to $0.26 at 41.8%. Note that a
+discount between one third and two thirds is **not expressible without the
+per-cue component**: whole cents per 1,000 characters jump straight from 2 to 1,
+and a flat 1 cent loses money on the signal box — $0.14 charged against $0.144
+of model cost, card fee and AWS. The per-100-cues component is what gives the rate card sub-cent
+resolution — the lever section 6.9 assumed when it wrote "2.25 cents per 1,000".
+
+#### Recommendation
+
+Adopt **A** — 1 cent per 1,000 characters plus 8 cents per 100 cues on the fast
+lane, 1 cent plus 4 cents on the economy lane — which lifts the two measured
+full-length files from 28.1% and 32.6% margin to 35.3% and 42.5%, leaves every
+file at the 10-cent floor priced exactly as it is today, and makes the
+specification's own feature film 8 cents _cheaper_ rather than dearer. Run one
+full-length fixture at section 5.3's 43 characters per cue first, about 25
+cents, because A's neutrality on the film rests on section 5.3's modelled $0.75
+and not on a measurement, and that single run is the difference between pricing
+an assumption and pricing a number.
+
 ## Handover: what was left out, and what was simplified
 
 Everything here is deliberate. Nothing in this list is a bug.
@@ -933,7 +1046,7 @@ rather than a command.
 
 ## Test counts and coverage, as measured
 
-719 tests in 39 files, all offline: nothing in the suite touches the network or
+742 tests in 40 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
@@ -942,13 +1055,13 @@ deterministic fake model client.
 | `packages/subtitles` |     99.03% |     96.64% |       100% |     98.82% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
 | `packages/harness`   |     97.36% |     88.94% |     97.05% |     98.65% |
-| `packages/shared`    |     99.13% |     83.87% |       100% |       100% |
-| `packages/core`      |     90.07% |     76.43% |     92.98% |     91.77% |
+| `packages/shared`    |     99.18% |     84.85% |       100% |       100% |
+| `packages/core`      |     90.09% |     76.64% |     92.98% |     91.79% |
 | `packages/cli`       |     91.57% |     74.24% |       100% |     92.81% |
 | `packages/dev-api`   |     79.45% |     73.46% |     85.71% |     81.29% |
-| `evals`              |     90.49% |     76.92% |     92.30% |     93.36% |
+| `evals`              |     90.49% |     77.06% |     92.31% |     93.36% |
 | `infra`              |     77.62% |     66.18% |     53.06% |     79.27% |
-| **All**              | **91.96%** | **81.80%** | **92.30%** | **93.42%** |
+| **All**              | **91.99%** | **81.88%** | **92.36%** | **93.45%** |
 
 `packages/dev-api` and `infra` are the lowest, and deliberately so. What is
 uncovered in `dev-api` is its executable entry points (`bin.ts`, `dev.ts`),
