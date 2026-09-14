@@ -189,7 +189,11 @@ describe("the service, over memory alone", () => {
       f.now(),
     );
 
-    const price = priceCents(started.response.batch.jobs[0]?.dialogueChars ?? 0, "fast");
+    const job = started.response.batch.jobs[0];
+    const price = priceCents(
+      { dialogueChars: job?.dialogueChars ?? 0, cueCount: job?.cueCount ?? 0 },
+      "fast",
+    );
     expect(started.response.batch.priceCents).toBe(price);
     expect(started.response.balanceCents).toBe(FREE_BALANCE_CENTS - price);
     // The work starts in this process, so the 202 already says so.

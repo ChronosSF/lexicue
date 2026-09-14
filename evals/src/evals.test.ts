@@ -8,7 +8,7 @@ import {
   findRepeatedLines,
   findRepeatedLinesAcross,
 } from "@lexicue/harness";
-import { priceFile } from "@lexicue/pricing";
+import { DEFAULT_RATE_TABLE, meteredOf, priceCents, priceFile } from "@lexicue/pricing";
 import { parseSubtitleText } from "@lexicue/subtitles";
 import {
   EVAL_TARGETS,
@@ -135,6 +135,39 @@ describe("the corpus", () => {
    * lanes, and the economy price is two thirds of the fast one as section 6.2
    * says it should be.
    */
+  /**
+   * The regression that the rate table has to survive. Every fixture is parsed
+   * and priced with the default table, and every price is the one the manifest
+   * recorded — so the per-cue component and the configurable floor added to
+   * `packages/pricing` cannot have moved a single published price. The manifest
+   * also records what the parser found, so a change there is caught here rather
+   * than as a surprise on the bill.
+   */
+  it("prices every corpus fixture exactly as the manifest records", () => {
+    expect(corpus).toHaveLength(manifest.files.length);
+    for (const entry of corpus) {
+      const metered = meteredOf(entry.job.document);
+      expect({ path: entry.file.path, ...metered }).toEqual({
+        path: entry.file.path,
+        cueCount: entry.file.cues,
+        dialogueChars: entry.file.dialogueChars,
+      });
+      expect({
+        fast: priceCents(metered, "fast", DEFAULT_RATE_TABLE),
+        economy: priceCents(metered, "economy", DEFAULT_RATE_TABLE),
+      }).toEqual(entry.file.expectedPriceCents);
+    }
+  });
+
+  it("charges the corpus $2.45 on the fast lane, as every measured run did", () => {
+    const total = corpus.reduce(
+      (sum, entry) => sum + priceCents(meteredOf(entry.job.document), "fast"),
+      0,
+    );
+    expect(total).toBe(245);
+    expect(total).toBe(manifest.files.reduce((sum, file) => sum + file.expectedPriceCents.fast, 0));
+  });
+
   it("prices the full-length fixtures by the metered rate, not the 10-cent floor", () => {
     const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
     for (const path of ["drama/the-signal-box.srt", "comedy/the-inventory.srt"]) {
@@ -143,7 +176,7 @@ describe("the corpus", () => {
       if (document === undefined) continue;
       expect(document.dialogueChars).toBeGreaterThan(10_000);
       for (const lane of ["fast", "economy"] as const) {
-        const price = priceFile(document.dialogueChars, lane);
+        const price = priceFile(meteredOf(document), lane);
         expect(price.atMinimum).toBe(false);
         expect(price.priceCents).toBe(previewPrice(document, lane));
       }

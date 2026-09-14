@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { signStripePayload } from "@lexicue/core";
 import { FakeTranslationModelClient } from "@lexicue/harness";
-import { FREE_BALANCE_CENTS, priceCents } from "@lexicue/pricing";
+import { FREE_BALANCE_CENTS, meteredOf, priceCents } from "@lexicue/pricing";
 import { ledgerBalance, type ApiErrorBody, type Batch, type MeResponse } from "@lexicue/shared";
 import { parseSubtitleText } from "@lexicue/subtitles";
 import { unzipSync } from "fflate";
@@ -229,7 +229,7 @@ describe("the lifecycle of an upload", () => {
     expect(response.status).toBe(202);
 
     const created = (await response.json()) as { batch: Batch; balanceCents: number };
-    const expected = priceCents(parseSubtitleText(SRT).dialogueChars, "fast");
+    const expected = priceCents(meteredOf(parseSubtitleText(SRT)), "fast");
     expect(created.batch.priceCents).toBe(expected);
     expect(created.balanceCents).toBe(FREE_BALANCE_CENTS - expected);
 

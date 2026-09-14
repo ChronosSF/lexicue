@@ -1,4 +1,4 @@
-import { priceCents, type Lane } from "@lexicue/pricing";
+import { DEFAULT_RATE_TABLE, priceCents, type Lane, type RateTable } from "@lexicue/pricing";
 import {
   MAX_FILE_BYTES,
   REJECTION_MESSAGES,
@@ -33,7 +33,6 @@ export interface FilePreview {
   dialogueChars: number;
   /** Where the last cue ends, which is what a subtitle file's length means. */
   runningTimeMs: number;
-  priceCents: Record<Lane, number>;
   warnings: string[];
 }
 
@@ -130,17 +129,38 @@ export function previewOf(document: SubtitleDocument): FilePreview {
     cueCount: document.cues.length,
     dialogueChars: document.dialogueChars,
     runningTimeMs: document.cues.reduce((longest, cue) => Math.max(longest, cue.endMs), 0),
-    priceCents: {
-      fast: priceCents(document.dialogueChars, "fast"),
-      economy: priceCents(document.dialogueChars, "economy"),
-    },
     warnings: document.warnings,
   };
 }
 
+/**
+ * What one file costs on one lane. The price is derived from the rate table
+ * whenever it is shown rather than frozen into the preview when the file was
+ * dropped, so the table `GET /api/pricing` served is always the table the user
+ * sees a price from — and it is the table the server will charge with.
+ */
+export function priceOf(
+  preview: FilePreview,
+  lane: Lane,
+  rates: RateTable = DEFAULT_RATE_TABLE,
+): number {
+  return priceCents(
+    { dialogueChars: preview.dialogueChars, cueCount: preview.cueCount },
+    lane,
+    rates,
+  );
+}
+
 /** What the upload costs on one lane, counting only the files it can use. */
-export function totalCents(files: readonly LocalFile[], lane: Lane): number {
-  return files.reduce((sum, file) => sum + (file.preview?.priceCents[lane] ?? 0), 0);
+export function totalCents(
+  files: readonly LocalFile[],
+  lane: Lane,
+  rates: RateTable = DEFAULT_RATE_TABLE,
+): number {
+  return files.reduce(
+    (sum, file) => sum + (file.preview === null ? 0 : priceOf(file.preview, lane, rates)),
+    0,
+  );
 }
 
 export function usableFiles(files: readonly LocalFile[]): LocalFile[] {

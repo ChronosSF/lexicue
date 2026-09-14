@@ -1,13 +1,13 @@
 import { TARGET_LANGUAGES, type TranslationModelClient } from "@lexicue/harness";
 import {
+  DEFAULT_RATE_TABLE,
   DEFAULT_TOP_UP_CENTS,
   FREE_BALANCE_CENTS,
   LANES,
-  MINIMUM_PRICE_CENTS,
-  RATE_CENTS_PER_1000_CHARS,
   TOP_UP_AMOUNTS_CENTS,
   formatCents,
   priceCents,
+  type RateTable,
 } from "@lexicue/pricing";
 import {
   ApiError,
@@ -100,6 +100,13 @@ export interface ApiServiceOptions {
   /** Cues per model request; the denominator of the progress bar (spec 4.4). */
   batchSize?: number;
   /**
+   * What each lane charges (spec sections 6.1 and 9.8). In the deployed system
+   * it comes from Parameter Store; absent, it is today's published prices. The
+   * same table is served by `GET /api/pricing`, so the preview the browser drew
+   * and the charge this service makes come from one set of numbers.
+   */
+  rates?: RateTable;
+  /**
    * Refuse the economy lane before anything is charged, with this sentence.
    * The local development API sets it because holding a Message Batch open for
    * up to 23 hours inside a restarting dev server is the wrong place for it.
@@ -132,6 +139,7 @@ export class ApiService {
   private readonly environment: CoreEnvironment;
   private readonly downloads: DownloadSigner;
   private readonly batchSize: number;
+  private readonly rates: RateTable;
   private readonly refuseEconomy: string | null;
   private readonly shouldFail: (fileName: string) => boolean;
   private readonly startsImmediately: boolean;
@@ -143,6 +151,7 @@ export class ApiService {
     this.environment = options.environment;
     this.downloads = options.downloads;
     this.batchSize = options.batchSize ?? 120;
+    this.rates = options.rates ?? DEFAULT_RATE_TABLE;
     this.refuseEconomy = options.refuseEconomy ?? null;
     this.shouldFail = options.shouldFail ?? ((): boolean => false);
     this.startsImmediately = options.startsImmediately ?? false;
@@ -218,7 +227,7 @@ export class ApiService {
     return {
       rates: LANES.map((lane) => ({
         lane,
-        centsPer1000Chars: RATE_CENTS_PER_1000_CHARS[lane],
+        ...this.rates[lane],
         delivery:
           lane === "fast"
             ? "About two minutes per film"
@@ -228,19 +237,21 @@ export class ApiService {
             ? "Files are translated three at a time and appear as they finish."
             : "The same model and the same guarantees; only the waiting differs.",
       })),
-      minimumPriceCents: MINIMUM_PRICE_CENTS,
       topUpAmountsCents: [...TOP_UP_AMOUNTS_CENTS],
       defaultTopUpCents: DEFAULT_TOP_UP_CENTS,
       freeBalanceCents: FREE_BALANCE_CENTS,
+      // The worked examples of spec section 6.1, with the cue counts section
+      // 5.3 gives the same files, priced by the same function that prices a
+      // real file rather than copied from the table.
       examples: [
-        { label: "Sitcom episode, 22 min", dialogueChars: 16_000 },
-        { label: "Drama episode, 45 min", dialogueChars: 30_000 },
-        { label: "Feature film, 2 h", dialogueChars: 60_000 },
-        { label: "Ten-episode drama season", dialogueChars: 300_000 },
+        { label: "Sitcom episode, 22 min", dialogueChars: 16_000, cueCount: 350 },
+        { label: "Drama episode, 45 min", dialogueChars: 30_000, cueCount: 650 },
+        { label: "Feature film, 2 h", dialogueChars: 60_000, cueCount: 1_400 },
+        { label: "Ten-episode drama season", dialogueChars: 300_000, cueCount: 6_500 },
       ].map((example) => ({
         ...example,
-        fastCents: priceCents(example.dialogueChars, "fast"),
-        economyCents: priceCents(example.dialogueChars, "economy"),
+        fastCents: priceCents(example, "fast", this.rates),
+        economyCents: priceCents(example, "economy", this.rates),
       })),
     };
   }
@@ -339,7 +350,7 @@ export class ApiService {
       throw new ApiError({ code: "bad-request", message: this.refuseEconomy });
     }
 
-    const priced = await intake(data, this.files, request, now);
+    const priced = await intake(data, this.files, request, now, this.rates);
     const batchId = this.environment.newId("bat");
     const charge = applyCharge(walletView(data), {
       totalCents: priced.totalCents,

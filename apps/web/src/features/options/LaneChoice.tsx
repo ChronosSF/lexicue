@@ -45,6 +45,16 @@ export function LaneChoice({
               <span className="lane-rate faint num">
                 {rate.centsPer1000Chars}c per 1,000 characters of dialogue
               </span>
+              {/*
+                The per-cue component of spec section 6.1 is zero today, so this
+                line is absent and the card reads exactly as it always has. It
+                appears the moment a rate table with a cue component is served.
+              */}
+              {rate.centsPer100Cues > 0 ? (
+                <span className="lane-rate faint num">
+                  plus {rate.centsPer100Cues}c per 100 cues
+                </span>
+              ) : null}
             </label>
           );
         })}

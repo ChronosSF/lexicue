@@ -15,6 +15,15 @@ export const CorpusFileSchema = z.object({
   sourceLanguage: z.string(),
   format: z.enum(["srt", "microdvd", "subviewer"]),
   covers: z.array(z.string()),
+  /** What the parser finds in this file, and what it costs on each lane today. */
+  cues: z.int().positive(),
+  dialogueChars: z.int().positive(),
+  /**
+   * The price of spec section 6.1 under the default rate table, recorded here
+   * so a change to the price function, the rate table or the parser has to
+   * change this file too. Nothing may move these numbers by accident.
+   */
+  expectedPriceCents: z.object({ fast: z.int().positive(), economy: z.int().positive() }),
   hearingImpaired: z.boolean().optional(),
   sameDialogueAs: z.string().optional(),
   season: z.string().optional(),

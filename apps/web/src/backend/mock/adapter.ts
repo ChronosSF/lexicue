@@ -1,13 +1,14 @@
 import { TARGET_LANGUAGES, findTargetLanguage } from "@lexicue/harness";
 import {
+  DEFAULT_RATE_TABLE,
   DEFAULT_TOP_UP_CENTS,
   FREE_BALANCE_CENTS,
   LANES,
-  MINIMUM_PRICE_CENTS,
-  RATE_CENTS_PER_1000_CHARS,
   TOP_UP_AMOUNTS_CENTS,
   formatCents,
+  meteredOf,
   priceCents,
+  type RateTable,
 } from "@lexicue/pricing";
 import {
   ApiError,
@@ -105,6 +106,8 @@ export interface MockBackendOptions {
   seedDemo?: boolean;
   /** How a finished file becomes a URL; only tests need to replace it. */
   createDownloadUrl?: UrlFactory;
+  /** What each lane charges; defaults to today's published prices. */
+  rates?: RateTable;
 }
 
 export class MockBackend implements BackendAdapter {
@@ -122,6 +125,7 @@ export class MockBackend implements BackendAdapter {
   private readonly loadSampleList: () => Promise<SampleFile[]>;
   private readonly loadSampleBytes: (path: string) => Promise<Uint8Array>;
   private readonly wantsSeed: boolean;
+  private readonly rates: RateTable;
   private state: MockState | null = null;
   private seeding: Promise<void> | null = null;
 
@@ -136,6 +140,7 @@ export class MockBackend implements BackendAdapter {
         : new DownloadUrls(options.createDownloadUrl);
     this.loadSampleList = options.loadSampleList ?? defaultSampleList;
     this.loadSampleBytes = options.loadSample ?? defaultSampleBytes;
+    this.rates = options.rates ?? DEFAULT_RATE_TABLE;
   }
 
   // ---------------------------------------------------------------- session
@@ -250,7 +255,7 @@ export class MockBackend implements BackendAdapter {
     return Promise.resolve({
       rates: LANES.map((lane) => ({
         lane,
-        centsPer1000Chars: RATE_CENTS_PER_1000_CHARS[lane],
+        ...this.rates[lane],
         delivery:
           lane === "fast"
             ? "About two minutes per film"
@@ -260,21 +265,21 @@ export class MockBackend implements BackendAdapter {
             ? "Files are translated three at a time and appear as they finish."
             : "The same model and the same guarantees; only the waiting differs.",
       })),
-      minimumPriceCents: MINIMUM_PRICE_CENTS,
       topUpAmountsCents: [...TOP_UP_AMOUNTS_CENTS],
       defaultTopUpCents: DEFAULT_TOP_UP_CENTS,
       freeBalanceCents: FREE_BALANCE_CENTS,
-      // The worked examples of spec section 6.1, priced by the same function
-      // that prices a real file rather than copied from the table.
+      // The worked examples of spec section 6.1, with the cue counts section
+      // 5.3 gives the same files, priced by the same function that prices a
+      // real file rather than copied from the table.
       examples: [
-        { label: "Sitcom episode, 22 min", dialogueChars: 16_000 },
-        { label: "Drama episode, 45 min", dialogueChars: 30_000 },
-        { label: "Feature film, 2 h", dialogueChars: 60_000 },
-        { label: "Ten-episode drama season", dialogueChars: 300_000 },
+        { label: "Sitcom episode, 22 min", dialogueChars: 16_000, cueCount: 350 },
+        { label: "Drama episode, 45 min", dialogueChars: 30_000, cueCount: 650 },
+        { label: "Feature film, 2 h", dialogueChars: 60_000, cueCount: 1_400 },
+        { label: "Ten-episode drama season", dialogueChars: 300_000, cueCount: 6_500 },
       ].map((example) => ({
         ...example,
-        fastCents: priceCents(example.dialogueChars, "fast"),
-        economyCents: priceCents(example.dialogueChars, "economy"),
+        fastCents: priceCents(example, "fast", this.rates),
+        economyCents: priceCents(example, "economy", this.rates),
       })),
     });
   }
@@ -427,7 +432,9 @@ export class MockBackend implements BackendAdapter {
       });
     }
 
-    const prices = parsed.map((file) => priceCents(file.document.dialogueChars, request.lane));
+    const prices = parsed.map((file) =>
+      priceCents(meteredOf(file.document), request.lane, this.rates),
+    );
     const totalCents = prices.reduce((sum, price) => sum + price, 0);
     if (state.balanceCents < totalCents) {
       throw insufficientBalance(totalCents, state.balanceCents, TOP_UP_AMOUNTS_CENTS);

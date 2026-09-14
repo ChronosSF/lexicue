@@ -90,6 +90,7 @@ export {
   PriceExampleSchema,
   PricingResponseSchema,
   TargetLanguageSchema,
+  rateTableOf,
   type LanguagesResponse,
   type LaneRate,
   type PriceExample,

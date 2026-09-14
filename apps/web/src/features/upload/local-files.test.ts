@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { priceCents } from "@lexicue/pricing";
+import { DEFAULT_RATE_TABLE, priceCents, type RateTable } from "@lexicue/pricing";
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import { intake, totalCents, usableFiles, type RawFile } from "./local-files.js";
+import { intake, priceOf, totalCents, usableFiles, type RawFile } from "./local-files.js";
 
 /**
  * What the upload screen does before anything reaches the backend: unpack,
@@ -26,17 +26,34 @@ function sample(path: string): RawFile {
 describe("intake", () => {
   it("parses a SubRip file and prices it on both lanes", () => {
     const { files } = intake([sample("the-lamp-room.srt")]);
-    const file = files[0];
-    expect(file?.problem).toBeNull();
-    expect(file?.preview).toMatchObject({ format: "srt", encoding: "utf-8" });
-    expect(file?.preview?.cueCount).toBe(38);
-    expect(file?.preview?.priceCents.fast).toBe(
-      priceCents(file?.preview?.dialogueChars ?? 0, "fast"),
-    );
-    expect(file?.preview?.priceCents.economy).toBe(
-      priceCents(file?.preview?.dialogueChars ?? 0, "economy"),
-    );
-    expect(file?.preview?.runningTimeMs).toBeGreaterThan(0);
+    const preview = files[0]?.preview;
+    expect(files[0]?.problem).toBeNull();
+    expect(preview).toMatchObject({ format: "srt", encoding: "utf-8" });
+    expect(preview?.cueCount).toBe(38);
+    if (preview === undefined || preview === null) throw new Error("unreachable");
+    const metered = { dialogueChars: preview.dialogueChars, cueCount: preview.cueCount };
+    expect(priceOf(preview, "fast")).toBe(priceCents(metered, "fast"));
+    expect(priceOf(preview, "economy")).toBe(priceCents(metered, "economy"));
+    expect(preview.runningTimeMs).toBeGreaterThan(0);
+  });
+
+  /**
+   * The preview holds what the file is, not what it costs, so a rate table
+   * arriving from `GET /api/pricing` after the file was dropped is the table
+   * the user sees a price from — which is the table the server charges with.
+   */
+  it("prices a dropped file from whatever rate table it is shown with", () => {
+    const { files } = intake([sample("the-lamp-room.srt")]);
+    const preview = files[0]?.preview;
+    if (preview === undefined || preview === null) throw new Error("unreachable");
+    const dearer: RateTable = {
+      fast: { centsPer1000Chars: 3, centsPer100Cues: 6, minimumPriceCents: 10 },
+      economy: { centsPer1000Chars: 2, centsPer100Cues: 4, minimumPriceCents: 10 },
+    };
+    expect(priceOf(preview, "fast", DEFAULT_RATE_TABLE)).toBe(10);
+    // 1,062 characters is 3.19c and 38 cues is 2.28c: still under the floor.
+    expect(priceOf(preview, "fast", dearer)).toBe(10);
+    expect(totalCents(files, "fast", dearer)).toBe(10);
   });
 
   it("recognises both .sub dialects by their content", () => {
@@ -117,6 +134,8 @@ describe("totals", () => {
       { name: "broken.srt", bytes: new TextEncoder().encode("nonsense") },
     ]);
     expect(usableFiles(files)).toHaveLength(1);
-    expect(totalCents(files, "fast")).toBe(files[0]?.preview?.priceCents.fast);
+    const preview = files[0]?.preview;
+    if (preview === undefined || preview === null) throw new Error("unreachable");
+    expect(totalCents(files, "fast")).toBe(priceOf(preview, "fast"));
   });
 });

@@ -1,7 +1,7 @@
-import { formatCents, type Lane } from "@lexicue/pricing";
+import { formatCents, type Lane, type RateTable } from "@lexicue/pricing";
 import { formatBytes, formatCount, formatDuration, formatName } from "../../ui/format.js";
 import "./FileTable.css";
-import type { LocalFile } from "./local-files.js";
+import { priceOf, type LocalFile } from "./local-files.js";
 
 /**
  * The preview table of spec section 2.1: what the app understood about every
@@ -11,10 +11,12 @@ import type { LocalFile } from "./local-files.js";
 export function FileTable({
   files,
   lane,
+  rates,
   onRemove,
 }: {
   files: LocalFile[];
   lane: Lane;
+  rates: RateTable;
   onRemove: (id: string) => void;
 }): React.JSX.Element {
   return (
@@ -95,12 +97,12 @@ export function FileTable({
                 <td className="right num">{formatCount(file.preview.dialogueChars)}</td>
                 <td className="right num">{formatDuration(file.preview.runningTimeMs)}</td>
                 <td className={lane === "fast" ? "right num price is-chosen" : "right num price"}>
-                  {formatCents(file.preview.priceCents.fast)}
+                  {formatCents(priceOf(file.preview, "fast", rates))}
                 </td>
                 <td
                   className={lane === "economy" ? "right num price is-chosen" : "right num price"}
                 >
-                  {formatCents(file.preview.priceCents.economy)}
+                  {formatCents(priceOf(file.preview, "economy", rates))}
                 </td>
                 <td className="right">
                   <RemoveButton

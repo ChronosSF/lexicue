@@ -17,10 +17,9 @@ import type { IQueue } from "aws-cdk-lib/aws-sqs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
 import {
+  DEFAULT_RATE_TABLE,
   DEFAULT_TOP_UP_CENTS,
   FREE_BALANCE_CENTS,
-  MINIMUM_PRICE_CENTS,
-  RATE_CENTS_PER_1000_CHARS,
   TOP_UP_AMOUNTS_CENTS,
 } from "@lexicue/pricing";
 import { CONCURRENT_FAST_FILES, MAX_FILES_PER_DAY } from "@lexicue/shared";
@@ -153,9 +152,16 @@ export class ApiStack extends Stack {
   private addParameters(config: EnvironmentConfig): void {
     const prefix = parameterPrefix(config);
     const parameters: Record<string, string> = {
-      "pricing/fastRateCentsPer1000Chars": RATE_CENTS_PER_1000_CHARS.fast.toString(),
-      "pricing/economyRateCentsPer1000Chars": RATE_CENTS_PER_1000_CHARS.economy.toString(),
-      "pricing/minimumPriceCents": MINIMUM_PRICE_CENTS.toString(),
+      // The rate table of spec section 6.1, one parameter per number, so any
+      // one of them can be moved without touching the others. The per-cue
+      // components are zero: today's price is purely per character.
+      "pricing/fastRateCentsPer1000Chars": DEFAULT_RATE_TABLE.fast.centsPer1000Chars.toString(),
+      "pricing/fastRateCentsPer100Cues": DEFAULT_RATE_TABLE.fast.centsPer100Cues.toString(),
+      "pricing/fastMinimumPriceCents": DEFAULT_RATE_TABLE.fast.minimumPriceCents.toString(),
+      "pricing/economyRateCentsPer1000Chars":
+        DEFAULT_RATE_TABLE.economy.centsPer1000Chars.toString(),
+      "pricing/economyRateCentsPer100Cues": DEFAULT_RATE_TABLE.economy.centsPer100Cues.toString(),
+      "pricing/economyMinimumPriceCents": DEFAULT_RATE_TABLE.economy.minimumPriceCents.toString(),
       "pricing/topUpAmountsCents": TOP_UP_AMOUNTS_CENTS.join(","),
       "pricing/defaultTopUpCents": DEFAULT_TOP_UP_CENTS.toString(),
       "pricing/freeGrantCents": FREE_BALANCE_CENTS.toString(),

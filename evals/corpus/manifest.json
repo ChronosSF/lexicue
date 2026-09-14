@@ -12,7 +12,13 @@
         "italics",
         "a positioning override",
         "a running joke"
-      ]
+      ],
+      "cues": 38,
+      "dialogueChars": 1062,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "drama/the-last-tender.srt",
@@ -24,7 +30,13 @@
         "long silences",
         "radio procedure",
         "register shifts"
-      ]
+      ],
+      "cues": 34,
+      "dialogueChars": 941,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "documentary/the-keepers.srt",
@@ -36,7 +48,13 @@
         "dates and numbers",
         "interview register",
         "narration versus speech"
-      ]
+      ],
+      "cues": 27,
+      "dialogueChars": 1085,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "hearing-impaired/the-lamp-room.hi.srt",
@@ -49,7 +67,13 @@
         "bracketed sound descriptions",
         "speaker labels",
         "music notes and lyrics"
-      ]
+      ],
+      "cues": 28,
+      "dialogueChars": 639,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "german/der-leuchtturm.srt",
@@ -60,7 +84,13 @@
       "covers": [
         "a German source",
         "T-V distinction in the source"
-      ]
+      ],
+      "cues": 28,
+      "dialogueChars": 866,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "spanish/el-faro.srt",
@@ -71,7 +101,13 @@
       "covers": [
         "a Spanish source",
         "inverted punctuation"
-      ]
+      ],
+      "cues": 28,
+      "dialogueChars": 824,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "formats/the-lamp-room.microdvd.sub",
@@ -84,7 +120,13 @@
         "frame-based timings",
         "control codes",
         "pipe line breaks"
-      ]
+      ],
+      "cues": 38,
+      "dialogueChars": 1062,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "formats/the-lamp-room.subviewer.sub",
@@ -96,7 +138,13 @@
       "covers": [
         "an information block",
         "[br] line breaks"
-      ]
+      ],
+      "cues": 38,
+      "dialogueChars": 1062,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "season/skerry-point-s01e01.srt",
@@ -110,7 +158,13 @@
         "the shared characters Marta and Ivo",
         "the term the Light",
         "the gulls joke"
-      ]
+      ],
+      "cues": 23,
+      "dialogueChars": 539,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "season/skerry-point-s01e02.srt",
@@ -124,7 +178,13 @@
         "Petar, introduced late in the episode",
         "the stairs joke",
         "the tender"
-      ]
+      ],
+      "cues": 30,
+      "dialogueChars": 798,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "season/skerry-point-s01e03.srt",
@@ -138,7 +198,13 @@
         "Petar again",
         "all three running jokes",
         "cross-episode consistency"
-      ]
+      ],
+      "cues": 28,
+      "dialogueChars": 759,
+      "expectedPriceCents": {
+        "fast": 10,
+        "economy": 10
+      }
     },
     {
       "path": "drama/the-signal-box.srt",
@@ -152,7 +218,13 @@
         "Agnes, Dessie, Rosaleen and Mr. Bracewell across batches; Fintan only in the last third",
         "the railway senses of the block, the tablet, the up home and Section C, none of which are their everyday meanings",
         "a lever count that is wrong in every batch until the last one, where it is right"
-      ]
+      ],
+      "cues": 400,
+      "dialogueChars": 13339,
+      "expectedPriceCents": {
+        "fast": 41,
+        "economy": 27
+      }
     },
     {
       "path": "comedy/the-inventory.srt",
@@ -166,7 +238,13 @@
         "a tannoy sign-off, \"Thank you, Pallister's.\", in eight of the nine",
         "a count of umbrellas that rises by one each time it is mentioned, across five batches",
         "Haberdashery, Bay Twelve, the goods lift and the grotto as fixed terms"
-      ]
+      ],
+      "cues": 1000,
+      "dialogueChars": 31241,
+      "expectedPriceCents": {
+        "fast": 94,
+        "economy": 63
+      }
     }
   ]
 }

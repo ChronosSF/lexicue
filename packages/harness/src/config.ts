@@ -1,3 +1,4 @@
+import { DEFAULT_RATE_TABLE, type RateTable } from "@lexicue/pricing";
 import type { CacheTtl, Effort } from "./model-client.js";
 
 /**
@@ -41,6 +42,12 @@ export interface HarnessConfig {
   maxLineLength: number;
   /** Lines per cue before the harness re-flows (spec section 4.6). */
   maxLinesPerCue: number;
+  /**
+   * What each lane charges (spec section 6.1). The harness does not take money,
+   * but every file report states the price the file was charged, and it has to
+   * be the price the preview showed, so the table travels here as well.
+   */
+  rates: RateTable;
 }
 
 export const DEFAULT_HARNESS_CONFIG: HarnessConfig = {
@@ -63,6 +70,7 @@ export const DEFAULT_HARNESS_CONFIG: HarnessConfig = {
   readingSpeedCharsPerSecond: 20,
   maxLineLength: 42,
   maxLinesPerCue: 2,
+  rates: DEFAULT_RATE_TABLE,
 };
 
 /** Applies partial overrides to the defaults. */

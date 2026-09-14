@@ -91,7 +91,12 @@ describe("the API handler", () => {
       dependency,
     );
     expect(pricing.statusCode).toBe(200);
-    expect(JSON.parse(pricing.body)).toMatchObject({ minimumPriceCents: 10 });
+    expect(JSON.parse(pricing.body)).toMatchObject({
+      rates: [
+        { lane: "fast", centsPer1000Chars: 3, centsPer100Cues: 0, minimumPriceCents: 10 },
+        { lane: "economy", centsPer1000Chars: 2, centsPer100Cues: 0, minimumPriceCents: 10 },
+      ],
+    });
 
     const languages = await routeRequest(
       event("GET", "/api/languages", { signedIn: false }),

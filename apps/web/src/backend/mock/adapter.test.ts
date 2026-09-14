@@ -153,7 +153,8 @@ describe("the preview and the charge", () => {
     });
 
     const expected = created.batch.jobs.reduce(
-      (sum, job) => sum + priceCents(job.dialogueChars, "fast"),
+      (sum, job) =>
+        sum + priceCents({ dialogueChars: job.dialogueChars, cueCount: job.cueCount }, "fast"),
       0,
     );
     expect(created.batch.priceCents).toBe(expected);

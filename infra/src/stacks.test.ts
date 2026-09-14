@@ -305,8 +305,23 @@ describe("the api stack", () => {
       Value: "2",
     });
     template.hasResourceProperties("AWS::SSM::Parameter", {
-      Name: `${prefix}/pricing/minimumPriceCents`,
+      Name: `${prefix}/pricing/fastMinimumPriceCents`,
       Value: "10",
+    });
+    template.hasResourceProperties("AWS::SSM::Parameter", {
+      Name: `${prefix}/pricing/economyMinimumPriceCents`,
+      Value: "10",
+    });
+    // The per-cue component of the rate table, zero on both lanes: today's
+    // price is purely per character, and the parameter exists so it can move
+    // without a deploy (spec section 9.8).
+    template.hasResourceProperties("AWS::SSM::Parameter", {
+      Name: `${prefix}/pricing/fastRateCentsPer100Cues`,
+      Value: "0",
+    });
+    template.hasResourceProperties("AWS::SSM::Parameter", {
+      Name: `${prefix}/pricing/economyRateCentsPer100Cues`,
+      Value: "0",
     });
     template.hasResourceProperties("AWS::SSM::Parameter", {
       Name: `${prefix}/model/id`,
@@ -316,8 +331,11 @@ describe("the api stack", () => {
       Name: `${prefix}/model/batchSize`,
       Value: "120",
     });
-    // Eighteen parameters, and every one of them is a thing section 9.8 lists.
-    template.resourceCountIs("AWS::SSM::Parameter", 18);
+    // Twenty-one parameters, and every one of them is a thing section 9.8
+    // lists. The three added with the rate table are the per-cue component and
+    // the per-lane floor, which together let the price of section 6.1 be
+    // reshaped without a deploy.
+    template.resourceCountIs("AWS::SSM::Parameter", 21);
   });
 
   it("lets the API read its parameters and write none of them", () => {

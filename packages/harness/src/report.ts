@@ -1,4 +1,4 @@
-import { priceCents, type Lane } from "@lexicue/pricing";
+import { meteredOf, priceCents, type Lane } from "@lexicue/pricing";
 import { cueDialogueChars, stripMarkup, type SubtitleDocument } from "@lexicue/subtitles";
 import type { HarnessConfig } from "./config.js";
 import { costBreakdown, modelCostUsd, type CostBreakdown } from "./cost.js";
@@ -144,7 +144,7 @@ export function buildFileReport(input: BuildReportInput): FileReport {
     warnings: input.warnings,
 
     dialogueChars: source.dialogueChars,
-    priceCents: priceCents(source.dialogueChars, input.lane),
+    priceCents: priceCents(meteredOf(source), input.lane, config.rates),
     wallTimeMs: input.wallTimeMs,
     usage: input.usage,
     modelCostUsd: modelCostUsd(input.usage, input.model, input.lane),

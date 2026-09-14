@@ -1,5 +1,5 @@
 import { TARGET_LANGUAGES, findTargetLanguage, type TargetLanguage } from "@lexicue/harness";
-import { priceCents } from "@lexicue/pricing";
+import { DEFAULT_RATE_TABLE, meteredOf, priceCents, type RateTable } from "@lexicue/pricing";
 import {
   ApiError,
   MAX_FILES_PER_DAY,
@@ -88,6 +88,7 @@ export async function intake(
   files: FileStore,
   request: { uploadIds: readonly string[]; targetLanguage: string; lane: Lane },
   now: number,
+  rates: RateTable = DEFAULT_RATE_TABLE,
 ): Promise<IntakeResult> {
   const target = requireTargetLanguage(request.targetLanguage);
 
@@ -142,7 +143,7 @@ export async function intake(
 
   const withPrices = parsed.map((file) => ({
     ...file,
-    priceCents: priceCents(file.document.dialogueChars, request.lane),
+    priceCents: priceCents(meteredOf(file.document), request.lane, rates),
   }));
   const totalCents = withPrices.reduce((sum, file) => sum + file.priceCents, 0);
   if (data.account.balanceCents < totalCents) {

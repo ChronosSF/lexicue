@@ -10,8 +10,8 @@ import {
 import {
   FREE_BALANCE_CENTS,
   LANES,
-  MINIMUM_PRICE_CENTS,
-  RATE_CENTS_PER_1000_CHARS,
+  DEFAULT_RATE_TABLE,
+  meteredOf,
   TOP_UP_AMOUNTS_CENTS,
   priceCents,
   type Lane as PricingLane,
@@ -27,6 +27,7 @@ import {
   LanguagesResponseSchema,
   PricingResponseSchema,
   isInsufficientBalance,
+  rateTableOf,
   routePath,
   type Formality,
   type Lane,
@@ -78,32 +79,66 @@ describe("the contract and the packages it is shared with", () => {
     });
 
     const parsed = FileReportSchema.parse(report);
-    expect(parsed.priceCents).toBe(priceCents(document.dialogueChars, "fast"));
+    expect(parsed.priceCents).toBe(priceCents(meteredOf(document), "fast"));
     expect(parsed.totalCues).toBe(2);
   });
 
   it("describes the pricing route with the numbers the price package holds", () => {
+    const film = { dialogueChars: 60_000, cueCount: 1_400 };
     const response = PricingResponseSchema.parse({
       rates: LANES.map((lane) => ({
         lane,
-        centsPer1000Chars: RATE_CENTS_PER_1000_CHARS[lane],
+        ...DEFAULT_RATE_TABLE[lane],
         delivery: lane === "fast" ? "About two minutes per film" : "Usually within the hour",
         description: "",
       })),
-      minimumPriceCents: MINIMUM_PRICE_CENTS,
       topUpAmountsCents: [...TOP_UP_AMOUNTS_CENTS],
       defaultTopUpCents: 1000,
       freeBalanceCents: FREE_BALANCE_CENTS,
       examples: [
         {
           label: "Feature film, 2 h",
-          dialogueChars: 60_000,
-          fastCents: priceCents(60_000, "fast"),
-          economyCents: priceCents(60_000, "economy"),
+          ...film,
+          fastCents: priceCents(film, "fast"),
+          economyCents: priceCents(film, "economy"),
         },
       ],
     });
     expect(response.examples[0]).toMatchObject({ fastCents: 180, economyCents: 120 });
+  });
+
+  /**
+   * The whole rate table crosses the wire, and comes back as the table the
+   * browser prices with. Without this the preview and the charge are two
+   * constants that happen to agree rather than one number used twice.
+   */
+  it("carries the rate table to the browser intact", () => {
+    const served = LANES.map((lane) => ({
+      lane,
+      ...DEFAULT_RATE_TABLE[lane],
+      delivery: "",
+      description: "",
+    }));
+    expect(rateTableOf(PricingResponseSchema.shape.rates.parse(served))).toEqual(
+      DEFAULT_RATE_TABLE,
+    );
+  });
+
+  it("falls back to today's rates for a lane an older deployment did not serve", () => {
+    const served = [
+      {
+        lane: "fast" as const,
+        centsPer1000Chars: 2,
+        centsPer100Cues: 5,
+        minimumPriceCents: 25,
+        delivery: "",
+        description: "",
+      },
+    ];
+    expect(rateTableOf(served)).toEqual({
+      fast: { centsPer1000Chars: 2, centsPer100Cues: 5, minimumPriceCents: 25 },
+      economy: DEFAULT_RATE_TABLE.economy,
+    });
   });
 
   it("carries every curated target language, variants included", () => {

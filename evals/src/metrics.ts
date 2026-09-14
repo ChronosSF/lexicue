@@ -1,4 +1,10 @@
-import { priceCents, type Lane } from "@lexicue/pricing";
+import {
+  DEFAULT_RATE_TABLE,
+  meteredOf,
+  priceCents,
+  type Lane,
+  type RateTable,
+} from "@lexicue/pricing";
 import {
   markupMultisetsEqual,
   parseSubtitleText,
@@ -258,8 +264,12 @@ function renderingKey(lines: readonly string[]): string {
 }
 
 /** The price a preview would have shown, from the parsed source alone. */
-export function previewPrice(source: SubtitleDocument, lane: Lane): number {
-  return priceCents(source.dialogueChars, lane);
+export function previewPrice(
+  source: SubtitleDocument,
+  lane: Lane,
+  rates: RateTable = DEFAULT_RATE_TABLE,
+): number {
+  return priceCents(meteredOf(source), lane, rates);
 }
 
 /** True when every hard metric passed. */

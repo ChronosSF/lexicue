@@ -1,4 +1,4 @@
-import { priceCents } from "@lexicue/pricing";
+import { meteredOf, priceCents } from "@lexicue/pricing";
 import { parseSubtitleText, serialiseSubtitleDocument } from "@lexicue/subtitles";
 import { describe, expect, it } from "vitest";
 import { collectEconomyBatch, planBatches, submitEconomyBatch } from "./batches.js";
@@ -359,7 +359,7 @@ describe("the report of spec section 3.5", () => {
     expect(report.effort).toBe("medium");
     expect(report.promptVersion).toMatch(/@v3$/);
     expect(report.dialogueChars).toBe(source.document.dialogueChars);
-    expect(report.priceCents).toBe(priceCents(source.document.dialogueChars, "fast"));
+    expect(report.priceCents).toBe(priceCents(meteredOf(source.document), "fast"));
     expect(report.wallTimeMs).toBeGreaterThan(0);
   });
 
@@ -655,7 +655,7 @@ describe("the economy lane", () => {
 
     expect(economy.text).toBe(fast.text);
     expect(economy.report.lane).toBe("economy");
-    expect(economy.report.priceCents).toBe(priceCents(source.document.dialogueChars, "economy"));
+    expect(economy.report.priceCents).toBe(priceCents(meteredOf(source.document), "economy"));
   });
 
   it("retries an errored Message Batch entry interactively", async () => {

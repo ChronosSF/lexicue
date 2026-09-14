@@ -1,5 +1,5 @@
 import { formatCents } from "@lexicue/pricing";
-import { ApiError, isInsufficientBalance } from "@lexicue/shared";
+import { ApiError, isInsufficientBalance, rateTableOf } from "@lexicue/shared";
 import { MAX_FILES_PER_UPLOAD } from "@lexicue/subtitles";
 import { useState } from "react";
 import { useDraft } from "../../app/draft.js";
@@ -33,9 +33,12 @@ export function UploadScreen(): React.JSX.Element {
 
   const usable = usableFiles(draft.files);
   const problems = draft.files.length - usable.length;
+  // The rates the API served, which is what the server will charge with; until
+  // the route answers, today's published defaults.
+  const rates = rateTableOf(pricing.data?.rates ?? []);
   const totals = {
-    fast: totalCents(usable, "fast"),
-    economy: totalCents(usable, "economy"),
+    fast: totalCents(usable, "fast", rates),
+    economy: totalCents(usable, "economy", rates),
   };
   const total = totals[draft.lane];
   const balanceCents = me.data?.balanceCents ?? 0;
@@ -141,7 +144,12 @@ export function UploadScreen(): React.JSX.Element {
               </button>
             </div>
 
-            <FileTable files={draft.files} lane={draft.lane} onRemove={draft.removeFile} />
+            <FileTable
+              files={draft.files}
+              lane={draft.lane}
+              rates={rates}
+              onRemove={draft.removeFile}
+            />
 
             {draft.files.length >= MAX_FILES_PER_UPLOAD ? (
               <p className="hint">
