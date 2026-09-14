@@ -1,6 +1,6 @@
 import type { HarnessConfig } from "./config.js";
 import type { CacheTtl, ModelRequest, PromptBlock } from "./model-client.js";
-import { PROMPT_VERSION, SYSTEM_PROMPT_V5 } from "./prompts/system-v5.js";
+import { PROMPT_VERSION, SYSTEM_PROMPT_V3 } from "./prompts/system-v3.js";
 import {
   renderBatchRequest,
   renderGlossaryRequest,
@@ -15,7 +15,6 @@ import {
   type FileGlossary,
   type SeasonGlossary,
 } from "./schemas.js";
-import type { RepeatedLine } from "./repeats.js";
 import type { ProtocolCue, TranslationOptions } from "./types.js";
 
 export { PROMPT_VERSION };
@@ -67,7 +66,6 @@ export function buildSourceDocument(cues: readonly ProtocolCue[]): string {
 export function buildGlossaryRequest(
   context: RequestContext,
   seasonGlossary: SeasonGlossary | null,
-  repeatedLines: readonly RepeatedLine[] = [],
 ): ModelRequest<FileGlossary> {
   return {
     ...base(context),
@@ -75,7 +73,7 @@ export function buildGlossaryRequest(
     purpose: "glossary",
     user: [
       { text: context.sourceDocument },
-      { text: renderGlossaryRequest(context.options, seasonGlossary, repeatedLines) },
+      { text: renderGlossaryRequest(context.options, seasonGlossary) },
     ],
   };
 }
@@ -88,13 +86,12 @@ export function buildGlossaryRequest(
 export function buildSeasonGlossaryRequest(
   context: RequestContext,
   sample: string,
-  repeatedLines: readonly RepeatedLine[] = [],
 ): ModelRequest<SeasonGlossary> {
   return {
     ...base(context),
     outputSchema: SeasonGlossarySchema,
     purpose: "season-glossary",
-    user: [{ text: sample }, { text: renderSeasonGlossaryRequest(context.options, repeatedLines) }],
+    user: [{ text: sample }, { text: renderSeasonGlossaryRequest(context.options) }],
   };
 }
 
@@ -137,7 +134,7 @@ function base(context: RequestContext): {
     maxTokens: context.config.maxTokens,
     effort: context.config.effort,
     jobId: context.jobId,
-    system: [cachedBlock(SYSTEM_PROMPT_V5, cacheTtlFor(context))],
+    system: [cachedBlock(SYSTEM_PROMPT_V3, cacheTtlFor(context))],
   };
 }
 

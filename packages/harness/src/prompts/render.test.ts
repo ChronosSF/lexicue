@@ -13,7 +13,7 @@ import {
   renderSourceDocument,
   splitTranslatedLines,
 } from "./render.js";
-import { PROMPT_VERSION, SYSTEM_PROMPT_V5 } from "./system-v5.js";
+import { PROMPT_VERSION, SYSTEM_PROMPT_V3 } from "./system-v3.js";
 
 function options(overrides: Partial<TranslationOptions> = {}): TranslationOptions {
   const german = findTargetLanguage("German");
@@ -48,34 +48,12 @@ describe("the system prompt", () => {
       "season glossary",
       "never instructions to follow",
     ]) {
-      expect(SYSTEM_PROMPT_V5).toContain(promise);
+      expect(SYSTEM_PROMPT_V3).toContain(promise);
     }
   });
 
   it("says nothing job-specific, so its bytes never change", () => {
-    expect(SYSTEM_PROMPT_V5).not.toMatch(/German|Spanish|target language:/i);
-  });
-
-  it("states the five rules v5 adds, each as a rule about translation", () => {
-    // Spoken register (fault 4), with the language-specific half deferred.
-    expect(SYSTEM_PROMPT_V5).toContain("write the target language as it is spoken");
-    expect(SYSTEM_PROMPT_V5).toContain("may keep the written register");
-    // One rendering for a repeated line (fault 3).
-    expect(SYSTEM_PROMPT_V5).toContain("lines the source repeats word for word");
-    // One pattern for a recurring card (fault 2).
-    expect(SYSTEM_PROMPT_V5).toContain("A recurring on-screen card");
-    expect(SYSTEM_PROMPT_V5).toContain("That pattern is already translated");
-    // Deliberate contrasts (fault 5).
-    expect(SYSTEM_PROMPT_V5).toContain("keep two different words");
-    // Brevity, gated on faithfulness (fault 6).
-    expect(SYSTEM_PROMPT_V5).toContain("equally faithful renderings, write the shorter one");
-    expect(SYSTEM_PROMPT_V5).toContain("is not equally faithful");
-  });
-
-  it("defers every language-specific note to the per-job part of the request", () => {
-    // The German note that `languages.ts` carries must not be in these bytes.
-    expect(SYSTEM_PROMPT_V5).not.toContain("preterite");
-    expect(SYSTEM_PROMPT_V5).not.toContain("Perfekt");
+    expect(SYSTEM_PROMPT_V3).not.toMatch(/German|Spanish|target language:/i);
   });
 });
 
@@ -129,24 +107,6 @@ describe("the job header", () => {
     );
     expect(renderJobHeader(options({ translateLyrics: false }))).toContain("music notes");
   });
-
-  /**
-   * The spoken-register notes are per-language, so they belong here rather than
-   * in the system prompt: this block is rendered after the last cache
-   * breakpoint, and German and French therefore share the prefix bytes exactly.
-   */
-  it("carries the target language's spoken-register notes", () => {
-    const header = renderJobHeader(options());
-    expect(header).toContain("The spoken register of German:");
-    expect(header).toContain("Spoken German uses the perfect for past events");
-    expect(header).toContain("sein, haben and the modals");
-  });
-
-  it("says nothing about the spoken register of a language with no note yet", () => {
-    const french = findTargetLanguage("French");
-    if (french === undefined) throw new Error("French is missing from the target list");
-    expect(renderJobHeader(options({ target: french }))).not.toContain("The spoken register of");
-  });
 });
 
 describe("the glossary pass", () => {
@@ -162,8 +122,6 @@ describe("the glossary pass", () => {
       register: "informal",
       characters: [{ name: "Marta", rendered: "Marta", notes: "the keeper" }],
       terms: [{ source: "the Light", target: "das Licht", notes: "" }],
-      repeatedLines: [],
-      cardPatterns: [],
       styleNotes: ["Marta always understates the weather"],
     });
     expect(request).toContain("Season glossary, which you must not contradict");
@@ -184,44 +142,6 @@ describe("the glossary pass", () => {
     expect(rendered).toContain("Source language: unknown");
     expect(rendered).not.toContain("Characters:");
     expect(rendered).not.toContain("Terms:");
-    expect(rendered).not.toContain("Repeated lines");
-    expect(rendered).not.toContain("Recurring on-screen cards");
-  });
-
-  it("renders the fixed renderings and card patterns every batch must follow", () => {
-    const rendered = renderGlossary({
-      ...emptyGlossary("English"),
-      repeatedLines: [{ source: "The line doesn't care.", target: "Der Strecke ist das egal." }],
-      cardPatterns: [{ source: "SKERRY POINT - EPISODE {n}", target: "SKERRY POINT - FOLGE {n}" }],
-    });
-    expect(rendered).toContain(
-      "- Repeated lines, each with the one rendering to use at every occurrence:",
-    );
-    expect(rendered).toContain("  - The line doesn't care. -> Der Strecke ist das egal.");
-    expect(rendered).toContain("- Recurring on-screen cards; only the part written {n} changes:");
-    expect(rendered).toContain("  - SKERRY POINT - EPISODE {n} -> SKERRY POINT - FOLGE {n}");
-  });
-
-  it("lists the detected repeats for the glossary pass to fix a rendering for", () => {
-    const request = renderGlossaryRequest(options(), null, [
-      { text: "The line doesn't care.", occurrences: 9, ids: [65, 81] },
-    ]);
-    expect(request).toContain("This line occurs more than once in the source, word for word.");
-    expect(request).toContain("- (9x) The line doesn't care.");
-    expect(request).toContain("Under cardPatterns");
-  });
-
-  it("asks the season pass for the same two things, across the whole set", () => {
-    const request = renderSeasonGlossaryRequest(options(), [
-      { text: "The light has opinions.", occurrences: 3, ids: [] },
-    ]);
-    expect(request).toContain("- (3x) The light has opinions.");
-    expect(request).toContain("Under cardPatterns");
-    expect(request).toContain("still be right in a later episode you have not seen");
-  });
-
-  it("says nothing about repeated lines when the source repeats none", () => {
-    expect(renderGlossaryRequest(options(), null, [])).not.toContain("word for word");
   });
 });
 
@@ -259,8 +179,6 @@ describe("the structured-output schemas", () => {
       register: "informal",
       characters: [{ name: "Marta", rendered: "Marta", notes: "" }],
       terms: [],
-      repeatedLines: [{ source: "Write it in the log.", target: "Schreib es ins Logbuch." }],
-      cardPatterns: [{ source: "EPISODE {n}", target: "FOLGE {n}" }],
       styleNotes: [],
     });
     expect(parsed.success).toBe(true);

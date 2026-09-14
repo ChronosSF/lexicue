@@ -16,7 +16,6 @@ import {
   type ModelUsage,
   type TranslationModelClient,
 } from "./model-client.js";
-import { findRepeatedLines } from "./repeats.js";
 import { buildSourceDocument, PROMPT_VERSION, type RequestContext } from "./requests.js";
 import { reassembleDocument } from "./reassemble.js";
 import { buildFileReport, type FileReport, type UntranslatedCue } from "./report.js";
@@ -96,20 +95,9 @@ export async function translateFile(input: TranslateFileInput): Promise<Translat
   const repairs: string[] = [];
   const state = { fallbackModelUsed: false };
 
-  // Found before any model call, from the source alone: the glossary pass fixes
-  // one rendering for each, and every batch of this file is given them with the
-  // rest of the glossary, so a line falling in four different batches comes
-  // back the same four times.
-  const repeatedLines = findRepeatedLines(cues);
-
   let glossary = input.glossary;
   if (glossary === undefined) {
-    const pass = await runGlossaryPass(
-      client,
-      context,
-      input.seasonGlossary ?? null,
-      repeatedLines,
-    );
+    const pass = await runGlossaryPass(client, context, input.seasonGlossary ?? null);
     addUsage(usage, pass.usage);
     glossary = pass.glossary;
     if (pass.degraded) {

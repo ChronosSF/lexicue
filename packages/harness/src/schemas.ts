@@ -31,38 +31,6 @@ export const RegisterSchema = z.enum(["formal", "informal", "mixed"]);
 export type Register = z.infer<typeof RegisterSchema>;
 
 /**
- * One rendering for a line the source repeats word for word. The harness finds
- * the repeats deterministically (`repeats.ts`) and the glossary pass fixes the
- * rendering once, so that every batch of a file — and every file of a season —
- * says it the same way.
- */
-export const RepeatedLineRenderingSchema = z.object({
-  source: z.string().describe("The repeated cue text exactly as it was listed"),
-  target: z.string().describe("The one rendering to use at every occurrence of it"),
-});
-export type RepeatedLineRendering = z.infer<typeof RepeatedLineRenderingSchema>;
-
-/**
- * A recurring on-screen card — a title card, an episode card, a chapter card,
- * an end card — as one pattern rather than one translation per occurrence. The
- * part that changes from one card to the next is written `{n}` on both sides,
- * so a season's cards keep one shape and only the number moves.
- */
-export const CardPatternSchema = z.object({
-  source: z
-    .string()
-    .describe(
-      "The recurring on-screen card as the source writes it, with the part that changes from one card to the next written as {n}",
-    ),
-  target: z
-    .string()
-    .describe(
-      "The one target-language form of that card, with the part that changes written as {n}",
-    ),
-});
-export type CardPattern = z.infer<typeof CardPatternSchema>;
-
-/**
  * The shared style sheet for a multi-file upload (spec section 4.4). It is
  * produced once from a sample of every file and outranks anything a single
  * episode's glossary infers.
@@ -72,12 +40,6 @@ export const SeasonGlossarySchema = z.object({
   register: RegisterSchema,
   characters: z.array(CharacterSchema),
   terms: z.array(TermSchema),
-  repeatedLines: z
-    .array(RepeatedLineRenderingSchema)
-    .describe("One fixed rendering for each repeated line the request lists"),
-  cardPatterns: z
-    .array(CardPatternSchema)
-    .describe("One pattern for each recurring on-screen card, with {n} for the part that changes"),
   styleNotes: z
     .array(z.string())
     .describe("Running jokes, verbal tics and tone notes that must hold across episodes"),
@@ -110,8 +72,6 @@ export function emptyGlossary(sourceLanguage = ""): FileGlossary {
     register: "mixed",
     characters: [],
     terms: [],
-    repeatedLines: [],
-    cardPatterns: [],
     styleNotes: [],
   };
 }

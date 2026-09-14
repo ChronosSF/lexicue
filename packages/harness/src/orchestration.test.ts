@@ -9,7 +9,7 @@ import {
   submitEconomyBatch,
   type BatchPlanEntry,
 } from "./batches.js";
-import { FakeTranslationModelClient, cachedPrefix } from "./clients/fake.js";
+import { FakeTranslationModelClient } from "./clients/fake.js";
 import { FaultInjectingModelClient } from "./clients/fault.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { DEFAULT_HARNESS_CONFIG, resolveConfig } from "./config.js";
@@ -18,12 +18,7 @@ import { findContradictions, mergeGlossaries, runGlossaryPass } from "./glossary
 import { findTargetLanguage } from "./languages.js";
 import type { ModelRequest, ModelResponse, TranslationModelClient } from "./model-client.js";
 import { emptyUsage } from "./model-client.js";
-import {
-  buildBatchRequest,
-  buildGlossaryRequest,
-  buildSourceDocument,
-  type RequestContext,
-} from "./requests.js";
+import { buildSourceDocument, type RequestContext } from "./requests.js";
 import { buildSeasonSample, runSeasonGlossaryPass } from "./season.js";
 import { emptyGlossary, type FileGlossary, type SeasonGlossary } from "./schemas.js";
 import { withTransportRetry } from "./transport.js";
@@ -236,64 +231,6 @@ describe("transport retries", () => {
   });
 });
 
-/**
- * Spec sections 4.7 and 4.8: the system prompt and the source document are the
- * cached prefix, and everything the job adds comes after the last breakpoint.
- * The material v4 adds — the target language's spoken-register notes, the fixed
- * renderings for repeated lines, the card patterns — is all per-job, so all of
- * it has to land on the far side of that line or the prefix stops being shared.
- */
-describe("the cache breakpoints", () => {
-  const glossary: FileGlossary = {
-    ...emptyGlossary("English"),
-    repeatedLines: [{ source: "The line doesn't care.", target: "Der Strecke ist das egal." }],
-    cardPatterns: [{ source: "EPISODE {n}", target: "FOLGE {n}" }],
-  };
-  const cues = [{ id: 1, lines: ["The line doesn't care."] }];
-
-  function batchRequest(target: string): ModelRequest<unknown> {
-    return buildBatchRequest(
-      { ...context(target), sourceDocument: "1\tThe line doesn't care." },
-      {
-        glossary,
-        cues,
-      },
-    );
-  }
-
-  it("keeps every piece of the new material out of the cached prefix", () => {
-    const request = batchRequest("de");
-    const prefix = cachedPrefix(request);
-    const tail = request.user.at(-1)?.text ?? "";
-    for (const material of [
-      "The spoken register of German:",
-      "Spoken German uses the perfect",
-      "Der Strecke ist das egal.",
-      "EPISODE {n} -> FOLGE {n}",
-    ]) {
-      expect(tail).toContain(material);
-      expect(prefix).not.toContain(material);
-    }
-  });
-
-  it("gives two targets byte-identical prefixes and different tails", () => {
-    const german = batchRequest("de");
-    const french = batchRequest("fr");
-    expect(cachedPrefix(french)).toBe(cachedPrefix(german));
-    expect(french.user.at(-1)?.text).not.toBe(german.user.at(-1)?.text);
-  });
-
-  it("keeps the detected repeats out of the glossary pass's prefix too", () => {
-    const request = buildGlossaryRequest(context("de"), null, [
-      { text: "The line doesn't care.", occurrences: 9, ids: [65, 81] },
-    ]);
-    // The glossary pass breaks only after the system prompt (see requests.ts),
-    // so the repeats must be in the request body, not the system block.
-    expect(cachedPrefix(request)).not.toContain("(9x)");
-    expect(request.user.at(-1)?.text).toContain("- (9x) The line doesn't care.");
-  });
-});
-
 describe("the season glossary", () => {
   const jobs = [job("s01e01.srt", 200), job("s01e02.srt", 200), job("s01e03.srt", 200)];
 
@@ -345,8 +282,6 @@ describe("merging a file glossary into the season's", () => {
     register: "informal",
     characters: [{ name: "Marta", rendered: "Marta", notes: "the keeper" }],
     terms: [{ source: "the Light", target: "das Licht", notes: "" }],
-    repeatedLines: [{ source: "The lamp is fine.", target: "Die Lampe ist in Ordnung." }],
-    cardPatterns: [{ source: "EPISODE {n}", target: "FOLGE {n}" }],
     styleNotes: ["Marta always understates the weather"],
   };
 
@@ -360,14 +295,6 @@ describe("merging a file glossary into the season's", () => {
     terms: [
       { source: "the light", target: "der Leuchtturm", notes: "" },
       { source: "the tender", target: "das Versorgungsboot", notes: "" },
-    ],
-    repeatedLines: [
-      { source: "The lamp is fine.", target: "Die Lampe ist gut." },
-      { source: "Write it in the log.", target: "Schreib es ins Logbuch." },
-    ],
-    cardPatterns: [
-      { source: "EPISODE {n}", target: "{n}. FOLGE" },
-      { source: "END OF EPISODE {n}", target: "ENDE DER FOLGE {n}" },
     ],
     styleNotes: ["Ivo speaks in short sentences"],
   };
@@ -399,15 +326,10 @@ describe("merging a file glossary into the season's", () => {
 
   it("names the contradictions it silently overrode", () => {
     const problems = findContradictions(season, file);
-    expect(problems).toHaveLength(5);
+    expect(problems).toHaveLength(3);
     expect(problems[0]).toContain("Martha");
     expect(problems[1]).toContain("der Leuchtturm");
-    // A repeated line and a card the season already fixed are contradictions
-    // in exactly the way a name is: the season's rendering is what every
-    // episode must use.
-    expect(problems[2]).toContain("Die Lampe ist gut.");
-    expect(problems[3]).toContain("{n}. FOLGE");
-    expect(problems[4]).toContain("register");
+    expect(problems[2]).toContain("register");
   });
 
   it("finds nothing to complain about when the file agrees", () => {
@@ -425,8 +347,6 @@ describe("the file glossary pass", () => {
       register: "informal",
       characters: [{ name: "Marta", rendered: "Marta", notes: "the keeper" }],
       terms: [],
-      repeatedLines: [],
-      cardPatterns: [],
       styleNotes: [],
     };
     const result = await runGlossaryPass(client, context(), season);

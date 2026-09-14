@@ -10,20 +10,6 @@ export interface TargetLanguage {
   script: Script;
   /** True for languages with a T-V distinction, where formality matters. */
   hasFormalityDistinction: boolean;
-  /**
-   * Where this language's spoken register differs from its written one in a way
-   * a model reliably gets wrong, said once, here.
-   *
-   * These are rendered into the per-job part of the request, never into the
-   * system prompt: the prompt is the front of the cached prefix and must stay
-   * byte-identical whatever the target is (spec sections 4.7 and 4.8). The
-   * general rule — dialogue is speech, write it as it is spoken — lives in the
-   * prompt; only the language-specific half lives here.
-   *
-   * An entry belongs here when an eval has shown the fault, not when it seems
-   * likely. German is the one with evidence today.
-   */
-  spokenRegisterNotes?: readonly string[];
 }
 
 /**
@@ -43,20 +29,7 @@ export const TARGET_LANGUAGES: readonly TargetLanguage[] = [
   { code: "pt-BR", name: "Portuguese (Brazil)", script: "latin", hasFormalityDistinction: true },
   { code: "pt-PT", name: "Portuguese (Portugal)", script: "latin", hasFormalityDistinction: true },
   { code: "fr", name: "French", script: "latin", hasFormalityDistinction: true },
-  {
-    code: "de",
-    name: "German",
-    script: "latin",
-    hasFormalityDistinction: true,
-    // The judge and the human read of 14 September 2026 both flagged bookish
-    // preterites in spoken lines ("Du sagtest", "Sie blickte") where the
-    // surrounding dialogue used the perfect.
-    spokenRegisterNotes: [
-      'Spoken German uses the perfect for past events, not the preterite: "Du hast das gesagt", not "Du sagtest". The preterite in a spoken line reads as written prose.',
-      'The exceptions stay preterite in speech too: sein, haben and the modals ("war", "hatte", "konnte", "wollte", "musste").',
-      "A narrative caption or voice-over that the source marks as narration may keep the preterite.",
-    ],
-  },
+  { code: "de", name: "German", script: "latin", hasFormalityDistinction: true },
   { code: "it", name: "Italian", script: "latin", hasFormalityDistinction: true },
   { code: "nl", name: "Dutch", script: "latin", hasFormalityDistinction: true },
   { code: "pl", name: "Polish", script: "latin", hasFormalityDistinction: true },

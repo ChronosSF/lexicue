@@ -15,7 +15,6 @@ import {
   type ModelUsage,
   type TranslationModelClient,
 } from "./model-client.js";
-import { findRepeatedLines } from "./repeats.js";
 import { buildSourceDocument, type RequestContext } from "./requests.js";
 import type { UploadReport } from "./report.js";
 import { runSeasonGlossaryPass, type SeasonSample } from "./season.js";
@@ -153,23 +152,20 @@ async function runEconomyLane(
   let running = seasonGlossary;
 
   for (const job of input.jobs) {
-    const cues = job.document.cues.map(toProtocolCue);
     const context: RequestContext = {
       config,
       options,
       jobId: job.jobId,
-      sourceDocument: buildSourceDocument(cues),
+      sourceDocument: buildSourceDocument(job.document.cues.map(toProtocolCue)),
     };
-    // The economy lane runs the glossary pass up front, so it is here rather
-    // than in translateFile that the file's repeated lines must be found.
-    const pass = await runGlossaryPass(client, context, running, findRepeatedLines(cues));
+    const pass = await runGlossaryPass(client, context, running);
     addUsage(usage, pass.usage);
     if (seasonGlossary !== null) running = pass.glossary;
     prepared.push({
       job,
       context,
       glossary: pass.glossary,
-      plan: planBatches(job.jobId, cues, config.batchSize),
+      plan: planBatches(job.jobId, job.document.cues.map(toProtocolCue), config.batchSize),
     });
   }
 

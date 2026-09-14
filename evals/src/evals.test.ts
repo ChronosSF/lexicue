@@ -439,7 +439,7 @@ describe("the runner", () => {
     expect(result.totals.cues).toBeGreaterThan(300);
     expect(result.seasons).toHaveLength(1);
     expect(result.seasons[0]?.consistent).toBe(true);
-    expect(result.promptVersion).toMatch(/@v5$/);
+    expect(result.promptVersion).toMatch(/@v3$/);
     expect(result.rubricVersion).toBe(RUBRIC_VERSION);
     for (const file of result.files) expect(file.judge?.means?.accuracy).toBe(4);
   });

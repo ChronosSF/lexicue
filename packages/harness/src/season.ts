@@ -1,7 +1,6 @@
 import type { HarnessConfig } from "./config.js";
 import type { ModelUsage, TranslationModelClient } from "./model-client.js";
 import { renderSourceDocument } from "./prompts/render.js";
-import { findRepeatedLinesAcross, type RepeatedLine } from "./repeats.js";
 import { buildSeasonGlossaryRequest, type RequestContext } from "./requests.js";
 import type { SeasonGlossary } from "./schemas.js";
 import { toProtocolCue, type TranslationJob } from "./types.js";
@@ -59,8 +58,6 @@ export async function buildSeasonSample(
 export interface SeasonGlossaryResult {
   glossary: SeasonGlossary | null;
   sample: SeasonSample;
-  /** The lines that repeat across the upload, which this pass fixed a rendering for. */
-  repeatedLines: RepeatedLine[];
   usage: ModelUsage;
 }
 
@@ -75,13 +72,7 @@ export async function runSeasonGlossaryPass(
   jobs: readonly TranslationJob[],
 ): Promise<SeasonGlossaryResult> {
   const sample = await buildSeasonSample(client, context.config, jobs);
-  // Repeats are counted over every cue of every file, not over the sample:
-  // a catchphrase said once an episode repeats across the set without
-  // repeating inside any one file, and this is the only pass that sees the set.
-  const repeatedLines = findRepeatedLinesAcross(
-    jobs.map((job) => job.document.cues.map(toProtocolCue)),
-  );
-  const request = buildSeasonGlossaryRequest(context, sample.text, repeatedLines);
+  const request = buildSeasonGlossaryRequest(context, sample.text);
   const response = await withTransportRetry(client, context.config, () => client.complete(request));
-  return { glossary: response.parsed, sample, repeatedLines, usage: response.usage };
+  return { glossary: response.parsed, sample, usage: response.usage };
 }
