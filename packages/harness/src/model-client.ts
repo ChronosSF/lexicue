@@ -1,7 +1,20 @@
 import type { z } from "zod";
 
-/** Effort levels the Messages API accepts (`output_config.effort`). */
-export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+/**
+ * Effort levels the Messages API accepts (`output_config.effort`), cheapest
+ * first. The list is the type's own source rather than a copy of it, so a
+ * command line that validates a level against it cannot drift from what the
+ * harness will actually send. Whether a given model accepts the field at all is
+ * the capability table's business (`acceptsEffort`), not this list's.
+ */
+export const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
+
+export type Effort = (typeof EFFORT_LEVELS)[number];
+
+/** Whether a string is one of the levels {@link EFFORT_LEVELS} lists. */
+export function isEffort(value: string): value is Effort {
+  return (EFFORT_LEVELS as readonly string[]).includes(value);
+}
 
 /** Cache breakpoint lifetimes the API accepts. */
 export type CacheTtl = "5m" | "1h";

@@ -5,9 +5,15 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { loadEnvFile } from "@lexicue/cli";
 import { isLane } from "@lexicue/pricing";
-import { AnthropicTranslationClient, type TranslationModelClient } from "@lexicue/harness";
+import {
+  DEFAULT_HARNESS_CONFIG,
+  AnthropicTranslationClient,
+  type Effort,
+  type TranslationModelClient,
+} from "@lexicue/harness";
 import { EVAL_TARGETS } from "./corpus.js";
 import { FakeJudgeModelClient } from "./fake-judge.js";
+import { parseOnlyList, resolveEffort } from "./options.js";
 import { runEval, summarise, writeResults } from "./runner.js";
 
 const HELP = `evals run [options]
@@ -24,9 +30,14 @@ Options
   --model <id>           Translation model id (default: claude-sonnet-5, the
                          product's translation model on both lanes)
   --judge-model <id>     Judge model id (default: claude-opus-5)
+  --effort <level>       Thinking effort for the translation model: low, medium
+                         (the product's setting), high, xhigh or max. Refused
+                         for a model the capability table says rejects the
+                         field. Recorded in result.json and the summary.
   --sample <n>           Cues judged per file (default: 20)
   --no-judge             Structure and cost only; no judge calls
-  --only <text>          Restrict the corpus to paths containing this text
+  --only <text>          Restrict the corpus to paths containing this text.
+                         Comma-separated for several: --only drama/,comedy/x.srt
   --out <dir>            Results directory (default: evals/results)
   --label <text>         Names the results folder
   -h, --help             Show this help
@@ -47,6 +58,7 @@ async function main(): Promise<number> {
       lane: { type: "string" },
       model: { type: "string" },
       "judge-model": { type: "string" },
+      effort: { type: "string" },
       sample: { type: "string" },
       "no-judge": { type: "boolean" },
       only: { type: "string" },
@@ -64,6 +76,24 @@ async function main(): Promise<number> {
   const lane = values.lane ?? "fast";
   if (!isLane(lane)) {
     process.stderr.write(`--lane must be "fast" or "economy", not "${lane}".\n`);
+    return 2;
+  }
+
+  // Checked before the key is read and long before anything is spent: an
+  // unusable level should cost nothing to find out about.
+  let effort: Effort | undefined;
+  if (values.effort !== undefined) {
+    const choice = resolveEffort(values.effort, values.model ?? DEFAULT_HARNESS_CONFIG.model);
+    if ("problem" in choice) {
+      process.stderr.write(`${choice.problem}\n`);
+      return 2;
+    }
+    effort = choice.effort;
+  }
+
+  const only = values.only === undefined ? undefined : parseOnlyList(values.only);
+  if (only?.length === 0) {
+    process.stderr.write(`--only names no file: "${values.only ?? ""}".\n`);
     return 2;
   }
 
@@ -89,10 +119,14 @@ async function main(): Promise<number> {
     targets,
     lane,
     judge: values["no-judge"] !== true,
-    ...(values.model === undefined ? {} : { config: { model: values.model } }),
+    // An empty object here is the same as none: resolveConfig fills the rest.
+    config: {
+      ...(values.model === undefined ? {} : { model: values.model }),
+      ...(effort === undefined ? {} : { effort }),
+    },
     ...(values["judge-model"] === undefined ? {} : { judgeModel: values["judge-model"] }),
     ...(sample === undefined ? {} : { judgeSampleSize: sample }),
-    ...(values.only === undefined ? {} : { only: values.only }),
+    ...(only === undefined ? {} : { only }),
     log: (line) => process.stderr.write(`${line}\n`),
   });
 

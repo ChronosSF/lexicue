@@ -41,6 +41,7 @@ export {
   type Judgement,
   type SeasonConsistency,
 } from "./rubric.js";
+export { parseOnlyList, resolveEffort, type EffortChoice } from "./options.js";
 export {
   runEval,
   summarise,

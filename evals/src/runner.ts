@@ -43,8 +43,12 @@ export interface EvalRunOptions {
   judge?: boolean;
   judgeModel?: string;
   judgeSampleSize?: number;
-  /** Restrict the corpus to files whose path contains this text. */
-  only?: string;
+  /**
+   * Restrict the corpus to files whose path contains any one of these. A list
+   * rather than a single term, so one run can cover several named files and
+   * they share the process, the cached prefix and the run's own totals.
+   */
+  only?: readonly string[];
   corpusRoot?: string;
   now?: () => number;
   log?: (line: string) => void;
@@ -96,8 +100,9 @@ export interface EvalRunResult {
 export async function runEval(options: EvalRunOptions): Promise<EvalRunResult> {
   const log = options.log ?? (() => undefined);
   const config = resolveConfig(options.config ?? {});
+  const only = options.only;
   const corpus = loadCorpus(options.corpusRoot).filter(
-    (entry) => options.only === undefined || entry.file.path.includes(options.only),
+    (entry) => only === undefined || only.some((term) => entry.file.path.includes(term)),
   );
   const usage = emptyUsage();
   const files: EvalFileResult[] = [];

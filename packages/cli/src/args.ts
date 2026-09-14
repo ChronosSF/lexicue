@@ -1,8 +1,10 @@
 import { parseArgs } from "node:util";
 import { isLane, type Lane } from "@lexicue/pricing";
 import {
+  EFFORT_LEVELS,
   MAX_CONTEXT_NOTE_LENGTH,
   findTargetLanguage,
+  isEffort,
   type Effort,
   type Formality,
   type LineHandling,
@@ -48,7 +50,6 @@ export class UsageError extends Error {
   }
 }
 
-const EFFORTS = new Set<string>(["low", "medium", "high", "xhigh", "max"]);
 const FORMALITIES = new Set<string>(["auto", "formal", "informal"]);
 
 export function parseCommandLine(argv: readonly string[]): Command {
@@ -119,8 +120,8 @@ export function parseCommandLine(argv: readonly string[]): Command {
   }
 
   const effort = values.effort;
-  if (effort !== undefined && !EFFORTS.has(effort)) {
-    throw new UsageError(`--effort must be low, medium, high, xhigh or max, not "${effort}".`);
+  if (effort !== undefined && !isEffort(effort)) {
+    throw new UsageError(`--effort must be ${EFFORT_LEVELS.join(", ")}, not "${effort}".`);
   }
 
   return {
@@ -135,7 +136,7 @@ export function parseCommandLine(argv: readonly string[]): Command {
     fake: values.fake === true,
     model: values.model,
     fallbackModel: values["fallback-model"],
-    effort: effort as Effort | undefined,
+    effort,
     batchSize: positiveInteger(values["batch-size"], "--batch-size"),
     concurrency: positiveInteger(values.concurrency, "--concurrency"),
     outDir: values.out,

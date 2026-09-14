@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_HARNESS_CONFIG,
+  EFFORT_LEVELS,
   findRepeatedLines,
   findRepeatedLinesAcross,
 } from "@lexicue/harness";
@@ -25,6 +26,7 @@ import {
   measureRepeatedLinesAcross,
   previewPrice,
 } from "./metrics.js";
+import { parseOnlyList, resolveEffort } from "./options.js";
 import { JUDGE_RUBRIC, RUBRIC_VERSION } from "./rubric.js";
 import { runEval, summarise, writeResults } from "./runner.js";
 
@@ -457,7 +459,7 @@ describe("the runner", () => {
       lane: "economy",
       config: { batchSize: 20 },
       judge: false,
-      only: "comedy/",
+      only: ["comedy/the-lamp-room"],
     });
     expect(result.hardMetricsPassed).toBe(true);
     expect(result.files[0]?.judge).toBeNull();
@@ -470,7 +472,7 @@ describe("the runner", () => {
       targets: ["de"],
       lane: "fast",
       judge: false,
-      only: "documentary/",
+      only: ["documentary/"],
     });
     const written = writeResults(result, { root: directory, label: "test" });
     expect(readdirSync(written).sort()).toEqual(["result.json", "summary.md"]);
@@ -549,6 +551,76 @@ describe("the runner", () => {
     expect(summary).toContain("Hard metrics: FAILED");
     expect(summary).toContain("**FAIL**");
     expect(summary).toContain("cue 4 lost its index or timing line");
+  });
+});
+
+/**
+ * The two options an effort sweep needs: a level to sweep, and a way to name
+ * both long files in one invocation. The second matters more than it looks —
+ * the files of one run share the cached system prefix, so measuring them in two
+ * runs would measure the cache along with the effort setting.
+ */
+describe("the run options", () => {
+  it("splits --only on commas, trimming each term", () => {
+    expect(parseOnlyList("drama/the-signal-box.srt, comedy/the-inventory.srt")).toEqual([
+      "drama/the-signal-box.srt",
+      "comedy/the-inventory.srt",
+    ]);
+    expect(parseOnlyList("comedy/")).toEqual(["comedy/"]);
+    expect(parseOnlyList(" , ")).toEqual([]);
+  });
+
+  it("runs every file a comma-separated --only names, and nothing else", async () => {
+    const result = await runEval({
+      client: new FakeJudgeModelClient(),
+      targets: ["de"],
+      lane: "fast",
+      judge: false,
+      only: ["documentary/", "german/"],
+    });
+    expect(result.files.map((file) => file.metrics.file).sort()).toEqual([
+      "der-leuchtturm.srt",
+      "the-keepers.srt",
+    ]);
+  });
+
+  it("accepts every effort level the harness can send", () => {
+    for (const level of EFFORT_LEVELS) {
+      expect(resolveEffort(level, "claude-sonnet-5")).toEqual({ effort: level });
+    }
+  });
+
+  it("refuses a level that is not one of them", () => {
+    const choice = resolveEffort("colossal", "claude-sonnet-5");
+    expect("problem" in choice && choice.problem).toContain("colossal");
+  });
+
+  /**
+   * The capability table, not a string check: Haiku 4.5 answers a request
+   * carrying `output_config.effort` with an error, so a run that would have
+   * failed at its first request fails at the command line instead — before the
+   * glossary passes have been paid for, which is how the economy lane's first
+   * submission lost five cents.
+   */
+  it("refuses an effort for a model the capability table says rejects the field", () => {
+    const choice = resolveEffort("low", "claude-haiku-4-5");
+    expect("problem" in choice && choice.problem).toContain("claude-haiku-4-5");
+  });
+
+  it("records the effort the run used in the result and the summary", async () => {
+    const result = await runEval({
+      client: new FakeJudgeModelClient(),
+      targets: ["de"],
+      lane: "fast",
+      judge: false,
+      config: { effort: "low" },
+      only: ["documentary/"],
+    });
+    expect(result.effort).toBe("low");
+    expect(summarise(result)).toContain("effort low");
+    const written = writeResults(result, { root: directory, label: "effort" });
+    const parsed: unknown = JSON.parse(readFileSync(join(written, "result.json"), "utf8"));
+    expect(parsed).toMatchObject({ effort: "low" });
   });
 });
 

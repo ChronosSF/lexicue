@@ -16,8 +16,10 @@ export {
 } from "./model-capabilities.js";
 
 export {
+  EFFORT_LEVELS,
   addUsage,
   emptyUsage,
+  isEffort,
   supportsBatches,
   type BatchModelClient,
   type BatchOutcome,
