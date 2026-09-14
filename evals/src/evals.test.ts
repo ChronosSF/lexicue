@@ -367,15 +367,56 @@ describe("the judge", () => {
   });
 
   it("checks name renderings across episodes without a model", () => {
+    // The season fixture exactly: Ivo is never named in episode two's source,
+    // Petar never in episode one's, and every episode renders what it does use
+    // the way the glossary fixes it.
     const episodes = [
-      { file: "e1", text: "Marta and Ivo" },
-      { file: "e2", text: "Marta and Ivo and Petar" },
-      { file: "e3", text: "Marta and Ivo and Petar" },
+      { file: "e1", source: "Marta and Ivo", text: "Marta und Ivo" },
+      { file: "e2", source: "Marta and Petar", text: "Marta und Petar" },
+      { file: "e3", source: "Marta and Ivo and Petar", text: "Marta und Ivo und Petar" },
     ];
-    expect(checkNameConsistency(episodes, ["Marta", "Ivo"]).consistent).toBe(true);
-    const uneven = checkNameConsistency(episodes, ["Petar"]);
-    expect(uneven.consistent).toBe(false);
-    expect(uneven.findings[0]).toContain("e2, e3");
+    const names = [
+      { name: "Marta", rendered: "Marta" },
+      { name: "Ivo", rendered: "Ivo" },
+      { name: "Petar", rendered: "Petar" },
+    ];
+    const checked = checkNameConsistency(episodes, names);
+    expect(checked.findings).toEqual([]);
+    expect(checked.consistent).toBe(true);
+  });
+
+  it("reports a name that two episodes using it render differently", () => {
+    const drifted = checkNameConsistency(
+      [
+        { file: "e1", source: "Marta and Ivo", text: "Marta und Ivo" },
+        { file: "e2", source: "Marta and Ivo", text: "Martha und Ivo" },
+      ],
+      [{ name: "Marta", rendered: "Marta" }],
+    );
+    expect(drifted.consistent).toBe(false);
+    expect(drifted.findings[0]).toContain("used in e1 and not in e2");
+  });
+
+  it("ignores a name only one episode's source uses, however it is rendered", () => {
+    const checked = checkNameConsistency(
+      [
+        { file: "e1", source: "Marta and Petar", text: "Marta und Pjotr" },
+        { file: "e2", source: "Marta alone", text: "Marta allein" },
+      ],
+      [{ name: "Petar", rendered: "Petar" }],
+    );
+    expect(checked.consistent).toBe(true);
+  });
+
+  it("ignores a rendering no episode uses, which is consistent rather than drift", () => {
+    const checked = checkNameConsistency(
+      [
+        { file: "e1", source: "the Light", text: "die Leuchte" },
+        { file: "e2", source: "the Light", text: "die Leuchte" },
+      ],
+      [{ name: "the Light", rendered: "das Licht" }],
+    );
+    expect(checked.consistent).toBe(true);
   });
 });
 

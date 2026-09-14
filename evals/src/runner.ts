@@ -19,6 +19,7 @@ import {
   checkNameConsistency,
   judgeFile,
   judgeSeasonConsistency,
+  type ConsistencyEpisode,
   type JudgeResult,
 } from "./judge.js";
 import { hardMetricsPassed, measureFile, previewPrice, type FileMetrics } from "./metrics.js";
@@ -154,13 +155,22 @@ export async function runEval(options: EvalRunOptions): Promise<EvalRunResult> {
       }
 
       if (group.length > 1 && group[0]?.file.season !== undefined) {
-        const episodes = upload.files.map((file) => ({
-          file: file.report.file,
-          text: serialiseSubtitleDocument(file.document),
-        }));
+        // The source of each episode goes in alongside the translation: a name
+        // that an episode never uses cannot be rendered inconsistently in it.
+        const episodes: ConsistencyEpisode[] = upload.files.map((file, index) => {
+          const source = group[index]?.job.document;
+          return {
+            file: file.report.file,
+            source: source === undefined ? "" : serialiseSubtitleDocument(source),
+            text: serialiseSubtitleDocument(file.document),
+          };
+        });
         const structural = checkNameConsistency(
           episodes,
-          (upload.seasonGlossary?.characters ?? []).map((character) => character.rendered),
+          (upload.seasonGlossary?.characters ?? []).map((character) => ({
+            name: character.name,
+            rendered: character.rendered,
+          })),
         );
         const judged =
           options.judge === false

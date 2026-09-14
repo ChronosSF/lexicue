@@ -17,6 +17,7 @@ export {
   judgeSeasonConsistency,
   renderJudgeRequest,
   stratifiedSample,
+  type ConsistencyEpisode,
   type JudgeResult,
 } from "./judge.js";
 export {

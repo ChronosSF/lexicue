@@ -196,24 +196,57 @@ export async function judgeSeasonConsistency(
   };
 }
 
+/** One episode of a season, as the structural cross-episode check sees it. */
+export interface ConsistencyEpisode {
+  file: string;
+  /** The episode's source text, which decides whether the term occurs at all. */
+  source: string;
+  /** The episode's translated text. */
+  text: string;
+}
+
 /**
  * The structural half of the cross-episode check, which needs no model: every
  * episode was translated against the same glossary, so a name the glossary
- * fixes must appear the same way wherever it appears at all.
+ * fixes must be rendered the same way in every episode that actually uses it.
+ *
+ * The subject of the check is the set of episodes whose *source* contains the
+ * term, not every episode of the season. An episode that never names a
+ * character cannot render that character inconsistently, and reporting it as
+ * one is a false positive: in the season fixture Ivo is never named in episode
+ * two's source and Petar never in episode one's, and the run of 14 September
+ * 2026 reported both as drift when the translation was correct.
+ *
+ * A finding therefore needs a disagreement: among the episodes whose source has
+ * the term, at least one uses the fixed rendering and at least one does not.
+ * That is what a viewer watching in order notices. A term rendered some other
+ * way in *every* episode is consistent, and is the judge's nameConsistency axis
+ * to catch, not this one's.
+ *
+ * Containment is plain case-insensitive substring rather than a word boundary,
+ * because target languages compound and inflect: "Logbuch" inside
+ * "Logbucheintrag" is a real occurrence, and a boundary check would report it
+ * as missing.
  */
 export function checkNameConsistency(
-  episodes: readonly { file: string; text: string }[],
-  renderings: readonly string[],
+  episodes: readonly ConsistencyEpisode[],
+  renderings: readonly { name: string; rendered: string }[],
 ): { consistent: boolean; findings: string[] } {
   const findings: string[] = [];
-  for (const rendering of renderings) {
-    if (rendering.trim() === "") continue;
-    const seenIn = episodes.filter((episode) => episode.text.includes(rendering));
-    if (seenIn.length > 0 && seenIn.length < episodes.length) {
-      findings.push(
-        `"${rendering}" appears in ${seenIn.map((episode) => episode.file).join(", ")} but not in every episode`,
-      );
-    }
+  for (const { name, rendered } of renderings) {
+    if (name.trim() === "" || rendered.trim() === "") continue;
+    const uses = episodes.filter((episode) => contains(episode.source, name));
+    if (uses.length < 2) continue;
+    const renderIt = uses.filter((episode) => contains(episode.text, rendered));
+    if (renderIt.length === 0 || renderIt.length === uses.length) continue;
+    const missing = uses.filter((episode) => !contains(episode.text, rendered));
+    findings.push(
+      `"${name.trim()}" is in the source of ${uses.map((episode) => episode.file).join(", ")}, but the glossary's rendering "${rendered.trim()}" is used in ${renderIt.map((episode) => episode.file).join(", ")} and not in ${missing.map((episode) => episode.file).join(", ")}`,
+    );
   }
   return { consistent: findings.length === 0, findings };
+}
+
+function contains(haystack: string, needle: string): boolean {
+  return haystack.toLowerCase().includes(needle.trim().toLowerCase());
 }
