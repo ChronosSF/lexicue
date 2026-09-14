@@ -245,6 +245,27 @@
         "fast": 112,
         "economy": 72
       }
+    },
+    {
+      "path": "documentary/the-long-meadow.srt",
+      "title": "The Long Meadow",
+      "genre": "documentary",
+      "sourceLanguage": "en",
+      "format": "srt",
+      "covers": [
+        "300 cues at 43.0 characters per cue, which is spec section 5.3's own modelled density and the one no other fixture has: the two other full-length files sit at 33.3 and 31.2",
+        "three batches at the default batch size, so two of them read the cached prefix",
+        "the recurring line \"The water has to keep moving.\" six times, in all three batches",
+        "Winifred Sallis and Tobias Reed throughout; Marguerite Okonkwo only in the first half; Alban Pryce only in the last third",
+        "the water-meadow senses of a drowner, a carrier, a drain, a main, a hatch, the float and stitching, none of which are their everyday meanings",
+        "narration, archive voice-over and two-speaker interview in one documentary, with dates and quantities throughout"
+      ],
+      "cues": 300,
+      "dialogueChars": 12893,
+      "expectedPriceCents": {
+        "fast": 37,
+        "economy": 25
+      }
     }
   ]
 }

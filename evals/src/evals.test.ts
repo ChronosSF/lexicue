@@ -113,13 +113,14 @@ describe("the corpus", () => {
    * Everything else in the corpus is 23 to 39 cues, which is a single batch:
    * it can never read the prompt cache, and its fixed costs are never
    * amortised, so it cannot say anything about the per-file cost model of spec
-   * section 5.3. These two can.
+   * section 5.3. These three can.
    */
-  it("has two full-length fixtures, each of several batches", () => {
+  it("has three full-length fixtures, each of several batches", () => {
     const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
     const expected = [
       { path: "drama/the-signal-box.srt", cues: 400, batches: 4 },
       { path: "comedy/the-inventory.srt", cues: 1000, batches: 9 },
+      { path: "documentary/the-long-meadow.srt", cues: 300, batches: 3 },
     ];
     for (const { path, cues, batches } of expected) {
       const document = byPath.get(path)?.job.document;
@@ -127,6 +128,42 @@ describe("the corpus", () => {
       expect(document?.warnings).toEqual([]);
       expect(Math.ceil(cues / DEFAULT_HARNESS_CONFIG.batchSize)).toBe(batches);
     }
+  });
+
+  /**
+   * The density the price was modelled on. Spec section 5.3 prices a feature
+   * film at about 43 characters per cue, and until this fixture existed nothing
+   * in the corpus was near it: the other two full-length files are 33.3 and
+   * 31.2, too close together to separate the per-cue and per-character parts of
+   * the cost by regression. The spread across the three is the measurement.
+   */
+  it("has a fixture at spec section 5.3's own 43 characters per cue", () => {
+    const byPath = new Map(corpus.map((entry) => [entry.file.path, entry]));
+    const density = (path: string): number => {
+      const document = byPath.get(path)?.job.document;
+      if (document === undefined) throw new Error(`${path} is not in the corpus`);
+      return document.dialogueChars / document.cues.length;
+    };
+    expect(density("documentary/the-long-meadow.srt")).toBeCloseTo(43.0, 1);
+    expect(density("drama/the-signal-box.srt")).toBeCloseTo(33.3, 1);
+    expect(density("comedy/the-inventory.srt")).toBeCloseTo(31.2, 1);
+  });
+
+  /**
+   * Its motif has to fall in every batch, the way the other two full-length
+   * fixtures' do: a translation that loses the thread between parallel requests
+   * shows up there and nowhere else.
+   */
+  it("repeats the long meadow's motif in all three of its batches", () => {
+    const entry = corpus.find((candidate) => candidate.file.path.endsWith("the-long-meadow.srt"));
+    const cues = entry?.job.document.cues ?? [];
+    const batchesWithMotif = new Set(
+      cues
+        .map((cue, index) => ({ text: cue.lines.join(" "), index }))
+        .filter((cue) => cue.text === "The water has to keep moving.")
+        .map((cue) => Math.floor(cue.index / DEFAULT_HARNESS_CONFIG.batchSize)),
+    );
+    expect(batchesWithMotif).toEqual(new Set([0, 1, 2]));
   });
 
   /**
@@ -157,13 +194,15 @@ describe("the corpus", () => {
     }
   });
 
-  it("charges the corpus $2.68 on the fast lane and $2.12 on the economy lane", () => {
+  it("charges the corpus $3.05 on the fast lane and $2.37 on the economy lane", () => {
     // $2.45 and $2.00 under the per-character rates these replaced on
-    // 14 September 2026; the whole 23-cent rise is the two full-length files.
+    // 14 September 2026, over the thirteen files that existed then; the whole
+    // 23-cent rise was the two full-length ones. The fourteenth,
+    // `documentary/the-long-meadow.srt`, adds 37 and 25 cents on top.
     const totalOn = (lane: "fast" | "economy"): number =>
       corpus.reduce((sum, entry) => sum + priceCents(meteredOf(entry.job.document), lane), 0);
-    expect(totalOn("fast")).toBe(268);
-    expect(totalOn("economy")).toBe(212);
+    expect(totalOn("fast")).toBe(305);
+    expect(totalOn("economy")).toBe(237);
     expect(totalOn("fast")).toBe(
       manifest.files.reduce((sum, file) => sum + file.expectedPriceCents.fast, 0),
     );
@@ -618,6 +657,7 @@ describe("the run options", () => {
     expect(result.files.map((file) => file.metrics.file).sort()).toEqual([
       "der-leuchtturm.srt",
       "the-keepers.srt",
+      "the-long-meadow.srt",
     ]);
   });
 

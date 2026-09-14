@@ -7,7 +7,7 @@ justifies the price premium over the cheap tools in section 6.7.
 
 ## The corpus
 
-`evals/corpus` holds thirteen files, 1,740 cues and 54,217 characters of
+`evals/corpus` holds fourteen files, 2,040 cues and 67,110 characters of
 dialogue, all written for this project. Nothing in it is copied from a real
 film, a real subtitle release, or anyone else's work, so the whole corpus is
 safe to redistribute. `manifest.json` describes each file and says what it
@@ -22,7 +22,7 @@ exists to cover.
 | Non-English sources      | `german/der-leuchtturm.srt`, `spanish/el-faro.srt`                                                                                                                             |
 | The other two formats    | `formats/the-lamp-room.microdvd.sub`, `formats/the-lamp-room.subviewer.sub` — the same dialogue as the comedy, so all three must price identically                             |
 | A three-episode season   | `season/skerry-point-s01e0{1,2,3}.srt` — Marta and Ivo throughout, Petar introduced late in episode two, and three running jokes (the gulls, the stairs, the Light's opinions) |
-| Full length              | `drama/the-signal-box.srt` (400 cues, four batches) and `comedy/the-inventory.srt` (1,000 cues, nine batches) — see below                                                      |
+| Full length              | `drama/the-signal-box.srt` (400 cues, four batches), `comedy/the-inventory.srt` (1,000 cues, nine batches) and `documentary/the-long-meadow.srt` (300 cues, three) — see below |
 
 **Scale.** The specification asks for about twenty files of 300 to 2,600 cues.
 Eleven of these thirteen are 23 to 39 cues, which is one batch each: they cover
@@ -30,22 +30,40 @@ every _shape_ the specification lists, but a single-batch file can never read
 the prompt cache and never amortises a file's fixed cost, so it can say nothing
 about the cost model of specification section 5.3.
 
-The other two exist for exactly that. **`drama/the-signal-box.srt`** is 400
+The other three exist for exactly that. **`drama/the-signal-box.srt`** is 400
 cues and 13,339 characters, four batches at the default batch size of 120;
 **`comedy/the-inventory.srt`** is 1,000 cues and 31,241 characters, nine
-batches. Both are priced by the metered rate rather than the 10-cent floor,
-which no other fixture is. Both were written for the seams: a line that recurs
-in _every_ batch of the file ("The line doesn't care." nine times; "Count it
-twice, say it once." fifteen times), names that appear in some batches and not
-others, fixed terms whose everyday meanings are wrong (the railway "tablet" is
-a token, not a pill), and a running count that is deliberately incorrect until
-the last batch. A translation that loses the thread between parallel requests
-shows up in those, and nowhere else in this corpus.
+batches; **`documentary/the-long-meadow.srt`** is 300 cues and 12,893
+characters, three batches. All three are priced by the metered rate rather than
+the 10-cent floor, which no other fixture is. All three were written for the
+seams: a line that recurs in _every_ batch of the file ("The line doesn't care."
+nine times; "Count it twice, say it once." fifteen times; "The water has to keep
+moving." six times), names that appear in some batches and not others, fixed
+terms whose everyday meanings are wrong (the railway "tablet" is a token, not a
+pill; a water meadow's "drowner" is the man who floods it and its "carriers" are
+channels), and a running count that is deliberately incorrect until the last
+batch. A translation that loses the thread between parallel requests shows up in
+those, and nowhere else in this corpus.
+
+**Density.** The three differ in characters per cue as well as in length, and
+that is deliberate. `the-signal-box.srt` is 33.3 and `the-inventory.srt` 31.2,
+which is a real shape — quick, dense dialogue — but too close together to tell
+the per-cue and per-character halves of the model cost apart.
+`the-long-meadow.srt` is **43.0**, which is what specification section 5.3
+prices a feature film at, and it is the third point that separates them. The
+root `README.md` has the fit and what it did to the price.
 
 Timings were laid out from the written dialogue at a spread of reading speeds,
 with pauses inside scenes and about nine seconds between them, which puts the
 400-cue file at 28 minutes and the 1,000-cue file at 1 hour 12. The dialogue
 itself, which is the part that gets translated, was written by hand.
+
+`the-long-meadow.srt` is timed more generously than the other two, at about 12
+characters a second with its lines broken at the 42-character convention, which
+leaves room for German to expand. It flags 1 reading-speed finding and 1 long
+line where `the-signal-box.srt` flags 102 and 66: the advisory counts on that
+file are a property of how tightly it was timed, not of the translation, and the
+newer fixture is what a professionally timed source looks like.
 
 What is still missing against section 10.4 is breadth rather than length: it
 asks for about twenty files, and a file at the 2,600-cue end.
@@ -109,8 +127,8 @@ it says nothing at all about translation quality.
 - Coverage: every cue of the input is a cue of the output.
 - The price charged equals the price a preview would have shown from the source.
 - Every fixture prices exactly as `corpus/manifest.json` records it, on both
-  lanes, under the default rate table: $2.68 for the corpus on the fast lane and
-  $2.12 on the economy lane, at the rates adopted on 14 September 2026. The
+  lanes, under the default rate table: $3.05 for the corpus on the fast lane and
+  $2.37 on the economy lane, at the rates adopted on 14 September 2026. The
   manifest carries each file's cue count, character count and expected price, so
   a change to the parser, the price function or the rate table has to change
   that file too — nothing may move a published price by accident.
@@ -213,18 +231,21 @@ version: cost tracks cues more closely than characters, and until 14 September
 **The rates changed on 14 September 2026** to 1 cent per 1,000 characters plus
 8 cents per 100 cues on the fast lane and 1 cent plus 4 cents on the economy
 lane, floor unchanged at 10 cents. Those two fixtures now return 35.3% and
-42.5%; every other fixture is at the floor and did not move a cent. The corpus
-costs $2.68 on the fast lane, up from $2.45.
+42.5%; every other fixture is at the floor and did not move a cent. The
+thirteen files that existed then cost $2.68 on the fast lane, up from $2.45;
+`documentary/the-long-meadow.srt` takes the fourteen to $3.05.
 
 ## Still to do
 
 - The rest of the breadth section 10.4 asks for: about twenty files, and one at
   the 2,600-cue end. Two full-length fixtures now exist; see **Scale** above.
-- **A full-length fixture at 43 characters per cue**, which is what
-  specification section 5.3 models the price on. The two that exist sit at 33.3
-  and 31.2, too close to separate the per-cue and per-character parts of the
-  cost. One run costs about 25 cents and is what the pricing recommendation in
-  the root `README.md` waits on.
+- **Done.** A full-length fixture at 43 characters per cue, which is what
+  specification section 5.3 models the price on.
+  `documentary/the-long-meadow.srt` was written for it and run for real on
+  14 September 2026 for 19 cents. It found the cost model a fifth under at its
+  own density — $0.0150 per 1,000 characters against a modelled $0.0125 — and
+  confirmed the rate change that was waiting on it. The root `README.md` has the
+  numbers.
 - The blind pairwise preference test against the cheap tools of specification
   section 6.7, which decides whether the fast lane keeps its premium. It needs
   native speakers, not code.

@@ -101,6 +101,12 @@ export async function previewPriceCents(
   fileName: string,
   lane: "Fast" | "Economy",
 ): Promise<number> {
+  // Wait for the row before reading the headings. `allTextContents` is a
+  // one-shot read with no auto-waiting of its own, so a table that has not
+  // rendered yet comes back as an empty list and reports a missing column
+  // rather than a missing table — which is a race, and on a parsing-heavy file
+  // it is a race that loses.
+  await expect(fileRow(page, fileName)).toBeVisible();
   // The headings are text content rather than rendered text on purpose: the
   // table renders them uppercase, and `innerText` would hand back "FAST".
   const headings = await page.getByRole("columnheader").allTextContents();

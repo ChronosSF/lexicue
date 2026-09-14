@@ -87,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 748 tests, in two Vitest projects: the packages and the app
+pnpm test        # 750 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 pnpm e2e         # 9 Playwright tests through the app in a real browser
@@ -129,9 +129,11 @@ untranslated, because English is not Bulgarian.
 
 ## Testing against the real API
 
-Steps 1 to 3 have now been run on both lanes, and a fourth file added for step
-3½; what they measured, and the four fixes they forced, are in the sections
-after this one. Step 4 has never been run.
+Steps 1 to 3 have now been run on both lanes, and two more files added for step
+3½ — `drama/the-signal-box.srt` for the multi-batch path and
+`documentary/the-long-meadow.srt` for the density the price is modelled on.
+What they measured, and the four fixes they forced, are in the sections after
+this one. Step 4 has never been run.
 
 1. **Set the key.** Copy `.env.example` to `.env` at the repository root and
    paste the key after the equals sign. The file is git-ignored, and only the
@@ -649,6 +651,123 @@ sweep runs paid for it once on its first file — about 3,000 tokens, under a
 cent. Per-file cache writes are dominated by each file's own source document,
 which is identical in all three arms.
 
+### The density the price was modelled on, as measured on 14 September 2026
+
+`documentary/the-long-meadow.srt` — 300 cues, 12,893 characters, **43.0
+characters per cue** — into German on the fast lane, `claude-sonnet-5` at effort
+`medium`, three batches at the default batch size. Written for this one
+measurement: specification section 5.3 prices a feature film at about 43
+characters per cue, and until this file existed nothing in the corpus was within
+ten of it. Outputs under `.local/runs/2026-09-14-1755-long-meadow-de/`.
+
+| What                  | Measured                                                         |
+| --------------------- | ---------------------------------------------------------------- |
+| Model cost            | $0.1936, against $0.37 charged                                   |
+| Per 1,000 characters  | $0.0150                                                          |
+| Per cue               | $0.000645                                                        |
+| Wall time             | 100.0 s for 300 cues, first batch alone then two at once         |
+| Tokens                | 17,299 in, 13,336 out                                            |
+| Cache                 | 9,099 written **once**, 14,716 read                              |
+| Repairs, untranslated | none, none                                                       |
+| Character expansion   | 1.097x — 12,893 characters of English, 14,144 of German          |
+| Advisory              | 1 cue over 20 characters per second, 49 lines over 42 characters |
+
+Every index line, timing line and inline tag came back identical to the source,
+re-parsed and compared cue by cue, and all 300 cues were translated.
+
+**The cost model is 20% optimistic at its own density.** Section 5.3 prices the
+film at $0.0125 per 1,000 characters and $0.000536 per cue. This file, at the
+section's own 43 characters per cue, came in at **$0.0150 per 1,000 characters
+(+20.1%) and $0.000645 per cue (+20.5%)**. The two percentages agree because the
+densities agree; at 42.98 against 42.9 they have to. That is the cleanest
+statement this repository can make about section 5.3: at the shape it models, it
+is a fifth under.
+
+| File                              |    Cues | Chars/cue | Per 1,000 chars |       Per cue |
+| --------------------------------- | ------: | --------: | --------------: | ------------: |
+| `season/*.srt` (3 files)          |      81 |      25.9 |         $0.0442 |     $0.001142 |
+| `comedy/the-lamp-room`            |      38 |      27.9 |         $0.0295 |     $0.000826 |
+| `comedy/the-inventory`            |   1,000 |      31.2 |         $0.0175 |     $0.000548 |
+| `drama/the-signal-box`            |     400 |      33.3 |         $0.0180 |     $0.000601 |
+| **`documentary/the-long-meadow`** | **300** |  **43.0** |     **$0.0150** | **$0.000645** |
+| Section 5.3's film, **modelled**  |   1,400 |      42.9 |         $0.0125 |     $0.000536 |
+
+**Three points now separate the two components, which two could not.** Least
+squares over the three full-length files gives
+
+```
+model cost  =  $0.0088 per 1,000 characters  +  $0.000277 per cue
+```
+
+and predicts all three within 5%. **At 43 characters per cue the per-cue term is
+42% of the cost; at 31 it is 51%.** That is the measurement the per-cue component
+of the rate exists for, and it is the first one taken rather than inferred: the
+signal box and the inventory alone fit a _negative_ per-cue term, because 33.3
+and 31.2 are too close to tell the two apart.
+
+Extrapolated, section 5.3's own film — 1,400 cues, 60,000 characters — costs
+**about $0.92, not $0.75**.
+
+**What that does to the recommendation, and what it does not.**
+
+| Section 5.3's film, fast lane | Old rates |   Under A |
+| ----------------------------- | --------: | --------: |
+| Price                         |     $1.80 |     $1.72 |
+| Margin at the modelled $0.75  |     50.8% |     48.8% |
+| Margin at the measured $0.92  | **41.6%** | **39.1%** |
+
+**A's neutrality on the film holds.** That was the claim the single run was meant
+to test, and it survives: the film gives up 2.4 points moving to A at the
+measured cost, against the 2.0 points the modelled table showed. Neutrality is a
+difference of two numbers that share a cost term, so being wrong about the cost
+by a fifth moves both sides together. **Nothing here argues for changing the
+rates, and they have not been changed.**
+
+**Section 5.3's cost column does not hold, and section 6.4's margins follow it
+down.** The specification's fast-lane table prints 43 to 49% across its shapes;
+at the measured cost those are nearer **34 to 40%**. This is the founder's to
+decide what to do about — it is a specification correction, not a rate change,
+and the rate that would fix it is a different conversation from the one just
+settled.
+
+**A did the job it was chosen for.** Margins at the new rates on every measured
+shape, worst first:
+
+| Shape                         | Lane    | Price | Model cost |    Margin |
+| ----------------------------- | ------- | ----: | ---------: | --------: |
+| `documentary/the-long-meadow` | fast    | $0.37 |    $0.1936 | **33.7%** |
+| `drama/the-signal-box`        | fast    | $0.46 |    $0.2406 |     35.3% |
+| Section 5.3's film, measured  | fast    | $1.72 |      $0.92 |     39.1% |
+| `comedy/the-inventory`        | fast    | $1.12 |    $0.5480 |     42.5% |
+| `documentary/the-long-meadow` | economy | $0.25 |    $0.0842 |     48.4% |
+
+The spread across the measured full-length shapes was 28.1% to 42.4% under the
+old rates and is **33.7% to 42.5%** under A: the floor came up by more than five
+points, which is exactly what the change was for. The economy figure is the
+signal box's measured 43.5%-of-fast ratio applied to this file; this run was
+fast-lane only.
+
+**One thing worth the founder's eye.** The long meadow is the only measured file
+that got _cheaper_ under A — 39 cents to 37 — and it therefore earns less than
+it used to, 36.8% down to 33.7%. That is the same mechanism that makes the
+feature film 8 cents cheaper, working as designed: A shifts charge from
+characters onto cues, and a sparse file has fewer cues per character. The
+consequence is that **the worst-earning shape is now the sparse one rather than
+the dense one.** It is a better worst case than the 28.1% it replaced, and no
+measurement here suggests moving the rate again; it is simply no longer true
+that dense files are where the margin risk sits.
+
+**The translation, read.** The motif — "The water has to keep moving.", six
+times across all three batches — came back as `Das Wasser muss in Bewegung
+bleiben.` every time, with no variation. Winifred Sallis, Tobias Reed, Marguerite
+Okonkwo, Alban Pryce, Wraycombe, Pennyquick and the Ashe are spelled identically
+throughout. The water-meadow vocabulary, which is the point of the fixture and
+whose everyday senses are all wrong, came back right and came back consistent: a
+`drowner` is a `Wässerer`, a `carrier` a `Wassergraben` against a `drain`'s
+`Abzugsgraben` and a `main`'s `Hauptgraben`, a `hatch` a `Schütz`. One miss, and
+it is the kind this fixture exists to catch: "That sheet has a name of its own"
+is the sheet of water, and it came back as `Tuch`, a cloth.
+
 ### What a full real eval would cost, for the founder to approve
 
 **Not run.** Projected from the measurements above, for the enlarged corpus of
@@ -719,12 +838,11 @@ per 1,000 characters but 2% more per cue**. That is the whole argument: the JSON
 same size whether a cue holds four words or fourteen, so a dense file costs more
 to produce per character and earns less.
 
-**The caveat that decides how far to go.** The sparse end of that table is a
-model, not a measurement. Nobody has translated a file at section 5.3's own 43
-characters per cue; the two measured full-length files sit at 33.3 and 31.2, too
-close to separate the per-cue and per-character components by regression. One
-run of a 43-characters-per-cue fixture costs about 25 cents and turns this
-argument from two measured points plus a model into three measured points.
+**The caveat that decided how far to go, now settled.** The sparse end of that
+table was a model, not a measurement: the two measured full-length files sat at
+33.3 and 31.2, too close to separate the per-cue and per-character components by
+regression. `documentary/the-long-meadow.srt` is the third point, at 43.0, and
+it cost 19 cents to make. The next section has it.
 
 #### Margin at the rates this replaced, per measured shape
 
@@ -807,8 +925,10 @@ to $1.12 fast, 63 to 72 cents economy).
 **The one assumption it rested on has now been measured**, which was the
 condition attached to the recommendation: A's neutrality on the feature film
 came from section 5.3's _modelled_ $0.75 at about 43 characters per cue, a
-density no fixture had. `drama/the-crossing-keeper.srt` was written for it and
-run for real; the section below reports what it cost.
+density no fixture had. `documentary/the-long-meadow.srt` was written for it
+and run for real on 14 September 2026; the section below reports what it cost,
+and the short version is that **A's neutrality on the film holds and section
+5.3's cost column does not**.
 
 ## Handover: what was left out, and what was simplified
 
@@ -905,15 +1025,18 @@ whitespace-level normalisations exist around it:
   measured. The table above says where each measurement will land.
 - The blind pairwise preference test against the cheap tools of section 6.7,
   which decides whether the fast lane keeps its premium, needs native speakers.
-- The eval corpus is thirteen hand-written files, 1,740 cues and 54,217
+- The eval corpus is fourteen hand-written files, 2,040 cues and 67,110
   characters, against the twenty files of 300 to 2,600 cues section 10.4 asks
   for. Eleven of them are 23 to 39 cues and cover every _shape_ — three genres,
   a hearing-impaired edition, three formats, three source languages, a
-  three-episode season. The two full-length ones, `drama/the-signal-box.srt` at
-  400 cues and `comedy/the-inventory.srt` at 1,000, cover the length: four and
-  nine batches, priced by the metered rate rather than the 10-cent floor, and
-  written so a recurring line falls in every batch. What is still short is
-  breadth, and a file at the 2,600-cue end. `evals/README.md` has the detail.
+  three-episode season. The three full-length ones — `drama/the-signal-box.srt`
+  at 400 cues, `comedy/the-inventory.srt` at 1,000 and
+  `documentary/the-long-meadow.srt` at 300 — cover the length and the density:
+  four, nine and three batches, priced by the metered rate rather than the
+  10-cent floor, written so a recurring line falls in every batch, and spanning
+  25.9 to 43.0 characters per cue, which is the spread the cost model is fitted
+  on. What is still short is breadth, and a file at the 2,600-cue end.
+  `evals/README.md` has the detail.
 
 ## Stripe, and what has not been exercised
 
@@ -1066,7 +1189,7 @@ rather than a command.
 
 ## Test counts and coverage, as measured
 
-748 tests in 40 files, all offline: nothing in the suite touches the network or
+750 tests in 40 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
