@@ -87,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 691 tests, in two Vitest projects: the packages and the app
+pnpm test        # 713 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -450,6 +450,66 @@ timings were laid out at 13 to 19 characters per second in English, and German
 expands, so a quarter of the cues land over the 20-per-second threshold. A
 professionally timed source would leave more room.
 
+### The prompt that did not land, as measured on 14 September 2026
+
+Three judged runs of the whole thirteen-file corpus into German, Sonnet 5 at
+effort `medium`, fast lane, Opus 5 judging a deterministic 20-cue stratified
+sample per file against `lexicue/judge@v1`. `lexicue/system@v3` is the baseline;
+`@v4` and `@v5` were written to answer the faults the baseline's judge notes
+recorded, and **neither landed**. The prompt is back at `@v3`.
+
+| Measure, corpus-wide               |        v3 |                     v4 |                    v5 |
+| ---------------------------------- | --------: | ---------------------: | --------------------: |
+| Prompt length (characters)         |     2,842 |           5,131 (+81%) |          4,029 (+42%) |
+| Hard metrics (13 files)            |      pass |                   pass |                  pass |
+| Accuracy                           |    4.9008 |    4.8962 (**−0.005**) |   4.8615 (**−0.039**) |
+| Naturalness                        |    4.8008 |        4.8192 (+0.018) |   4.7962 (**−0.005**) |
+| Register                           |    4.9654 |        4.9692 (+0.004) |   4.9538 (**−0.012**) |
+| Name consistency                   |    4.9700 |        4.9731 (+0.003) |       4.9846 (+0.015) |
+| Reading-speed flags per 1,000 cues |    212.07 |         201.72 (−4.9%) |       187.36 (−11.7%) |
+| Long-line flags per 1,000 cues     |    121.27 |        109.19 (−10.0%) |        117.24 (−3.3%) |
+| Output tokens                      |    72,926 |        90,667 (+24.3%) |        79,558 (+9.1%) |
+| Model cost per cue                 | $0.000610 | $0.000722 (**+18.4%**) | $0.000665 (**+8.9%**) |
+| Cache-read share                   |    0.8697 |                 0.8783 |                0.8751 |
+| Repeated lines drifting, of 18     |         — |                  **0** |                 **0** |
+| Season findings (real ones)        |         2 |                      3 |                     1 |
+
+**The one finding worth keeping.** The two runs are not two failures, they are
+one result. v4 held quality about level and cost 18.4% more per cue; v5 cut the
+prompt back, the thinking fell from +24.3% to +9.1% of output tokens, and three
+of the four judge axes fell with it while the cost was still 8.9% over a 5%
+ceiling. **At effort `medium` these rules improve the translation only in
+proportion to the thinking they buy, and that thinking is what breaks the
+ceiling.** `der-leuchtturm.srt` is the control: German into German, a near-copy
+the judge scores 5.00 on every axis, and its output tokens doubled under v4
+without a word of its translation changing. The next attempt should move one
+rule at a time, and should treat effort as a variable rather than holding it at
+`medium`.
+
+**What did work, and needs no model.** In both runs every one of the 18
+verbatim-repeated lines in the corpus came back with exactly one rendering: the
+400-cue file's nine occurrences of "The line doesn't care." all
+"Die Strecke kümmert das nicht.", the 1,000-cue file's fifteen "Count it twice,
+say it once." all "Zweimal zählen, einmal sagen.". That is the deterministic
+half — the harness finds the repeats from the source and the glossary fixes one
+rendering — and it is attributable to the mechanism rather than to any sentence
+of the prompt. The detection and the advisory that measures it are kept
+(`packages/harness/src/repeats.ts`); the prompt text and the schema fields that
+fed the model are reverted. **v3's prompt plus the deterministic fixed
+renderings and nothing else is the configuration worth measuring next, and it is
+the one configuration none of these three runs covered.** About $2.40.
+
+**The judge is most of the cost, and the projection below is low.** Measured
+here: judging one target costs $1.33 to $1.41, not the $4.00 the next section
+budgets for all eight. Translation into German cost $1.06 at v3. A judged German
+run is $2.39 all in.
+
+| Run                | Translation | Judge (Opus 5) |   Total |
+| ------------------ | ----------: | -------------: | ------: |
+| v3 baseline, 07:36 |     $1.0615 |        $1.3328 | $2.3943 |
+| v4, 09:17          |     $1.2570 |        $1.4101 | $2.6671 |
+| v5, 09:41          |     $1.1564 |        $1.3532 | $2.5096 |
+
 ### What a full real eval would cost, for the founder to approve
 
 **Not run.** Projected from the measurements above, for the enlarged corpus of
@@ -464,7 +524,10 @@ professionally timed source would leave more room.
 | Cross-episode consistency judging               |     $0.26 |
 | **Total**                                       | **$14.5** |
 
-Call it **$13 to $18**, and $10 to $12 with `--no-judge`. What is measured in
+Call it **$13 to $18**, and $10 to $12 with `--no-judge`. **The judging line is
+now measured and it is too low**: one target cost $1.33 to $1.41 to judge on 14
+September 2026, so eight targets is nearer $11 than $4, and the total nearer
+$20 to $24. The section above has the numbers. What is measured in
 that: the signal box at $0.2439, the season at $0.0863, the lamp room at
 $0.0321, and Bulgarian costing 1.06 times German over the same four files. What
 is modelled: the 1,000-cue file by interpolation, the seven short files at the
@@ -687,22 +750,22 @@ locally on this commit.
 
 ## Test counts and coverage, as measured
 
-691 tests in 38 files, all offline: nothing in the suite touches the network or
+713 tests in 39 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
 | Package              | Statements |   Branches |  Functions |      Lines |
 | -------------------- | ---------: | ---------: | ---------: | ---------: |
-| `packages/subtitles` |     98.33% |     92.55% |       100% |     99.51% |
+| `packages/subtitles` |     99.03% |     96.64% |       100% |     98.82% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
-| `packages/harness`   |     97.02% |     87.64% |     97.85% |     98.37% |
-| `packages/shared`    |     99.14% |     83.87% |       100% |       100% |
-| `packages/core`      |     90.08% |     76.44% |     92.98% |     91.77% |
-| `packages/cli`       |     91.62% |     74.24% |       100% |     92.86% |
-| `packages/dev-api`   |     79.46% |     73.47% |     85.71% |     81.29% |
-| `evals`              |     92.86% |     76.60% |     96.67% |     95.11% |
+| `packages/harness`   |     97.35% |     88.94% |     97.03% |     98.65% |
+| `packages/shared`    |     99.13% |     83.87% |       100% |       100% |
+| `packages/core`      |     90.07% |     76.43% |     92.98% |     91.77% |
+| `packages/cli`       |     91.62% |     74.24% |       100% |     92.85% |
+| `packages/dev-api`   |     79.45% |     73.46% |     85.71% |     81.29% |
+| `evals`              |     90.14% |     76.36% |     91.86% |     93.10% |
 | `infra`              |     77.62% |     66.18% |     53.06% |     79.27% |
-| **All**              | **92.08%** | **81.67%** | **92.55%** | **93.46%** |
+| **All**              | **91.93%** | **81.77%** | **92.24%** | **93.40%** |
 
 `packages/dev-api` and `infra` are the lowest, and deliberately so. What is
 uncovered in `dev-api` is its executable entry points (`bin.ts`, `dev.ts`),

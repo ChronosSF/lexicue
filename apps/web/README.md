@@ -211,6 +211,16 @@ and to write the reading down. These are all of them.
     `multipart/form-data` body S3's browser upload takes, and a finished file is
     a link carrying an expiry and a signature, which is what a presigned GET is.
     None of that client code changes when S3 arrives.
+11. **"The same name renderings in every episode" cannot mean every episode.**
+    Section 10.4 asks the cross-episode check for "same name renderings, same
+    form of address in every episode". Read literally that is a false positive
+    waiting to happen, and it happened: the check reported a rendering absent
+    from one episode as drift when that episode's source never names the
+    character at all — Ivo is never named in episode two of the season fixture,
+    Petar never in episode one. The reading taken is that the subject of the
+    check is the episodes whose _source_ contains the term, and that a finding
+    needs a disagreement among those: some render it the fixed way and some do
+    not. An episode that never says a name cannot say it inconsistently.
 
 ## Where the specification is wrong
 

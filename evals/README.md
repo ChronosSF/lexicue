@@ -68,7 +68,10 @@ pnpm evals run --to de,es,fr,pl,bg,el,ja,hi
 A full run is the whole corpus into eight languages plus judging. **On this
 corpus that is projected at $13 to $18, or $10 to $12 with `--no-judge`**, from
 the measured per-file costs in the root `README.md`; nobody has run it, and it
-needs the founder's approval. Specification section 10.4 budgets $25 to $35,
+needs the founder's approval. **The judging half of that projection is now
+measured and is too low**: one target cost $1.33 to $1.41 to judge on 14
+September 2026, so eight targets is nearer $11 than the $4 projected, and the
+total nearer $20 to $24. One judged target costs about $2.40 all in. Specification section 10.4 budgets $25 to $35,
 which does not reconcile with its own corpus and targets — see
 `apps/web/README.md`. `pnpm evals run --help` lists
 every flag; `--no-judge` gives a structural and cost run with no judge spend,
@@ -98,6 +101,20 @@ repairs the harness had to make, wall time, token usage, model cost, and the
 share of prefix tokens served from the cache rather than written to it — which
 is how the economy lane's real cache-hit rate gets measured.
 
+**Repeated lines.** `packages/harness/src/repeats.ts` finds every cue text the
+source repeats word for word — over one file, and over a whole upload for a
+catchphrase said once an episode — and `measureRepeatedLines` reports how many
+distinct renderings each came back with. `summary.md` gets a "Repeated lines"
+section naming any that drifted. It is advisory and never fails a run: a motif
+rendered two ways is a quality fault, not a structural break.
+
+Two things it deliberately does not do. It compares the words with markup
+stripped, because tag preservation is a hard metric and the 400-cue fixture says
+its motif three times in italics and six times not; comparing the tags too would
+report a perfect run as drift. And it groups only **verbatim** repeats: the
+season's "Write that in the log." and "Write it in the log." are different
+sentences, and a faithful translation is free to render them differently.
+
 **The model under test**
 
 Claude Sonnet 5, on both lanes. Haiku 4.5 was measured against it on 11
@@ -117,6 +134,14 @@ a cross-episode consistency check, in two halves: a structural one that needs no
 model, and the judge reading all three episodes for names, terms and forms of
 address that drift.
 
+The structural half takes each episode's **source** alongside its translation,
+and only judges the episodes whose source actually contains the term. An episode
+that never names a character cannot render that character inconsistently, and
+reporting it as drift is a false positive — which is what it did on 14 September
+2026, for both Ivo and Petar, until it was fixed. A finding now needs a
+disagreement: some episodes that use the name render it the fixed way and some
+do not.
+
 ## Results
 
 `pnpm evals run` writes a folder under `evals/results` named for the run's
@@ -134,7 +159,10 @@ visible in review.
 - The effort sweep (`low`, `medium`, `high`), which the runner already supports
   through `--model` and a config override, but which has not been run because it
   needs the real API.
-- A judged run of any kind. The rubric in `src/rubric.ts` is frozen and the
-  runner drives it, but no real judging spend has been made, so every quality
-  statement in this repository so far is a structural, cost or consistency
-  measurement plus a reading of the files.
+- **Done, three times over.** Judged runs of the whole corpus into German were
+  made on 14 September 2026 against `lexicue/system@v3`, `@v4` and `@v5`. The
+  root `README.md` carries the axis-by-axis table. The prompt is back at `@v3`:
+  neither replacement held every judge axis at or above the baseline while
+  staying inside the 5% cost ceiling.
+- A judged run into any target but German, and the effort sweep, which is the
+  variable the German runs suggest matters most.

@@ -18,7 +18,13 @@ import {
 } from "./corpus.js";
 import { FakeJudgeModelClient } from "./fake-judge.js";
 import { checkNameConsistency, judgeFile, renderJudgeRequest, stratifiedSample } from "./judge.js";
-import { hardMetricsPassed, measureFile, measureRepeatedLines, previewPrice } from "./metrics.js";
+import {
+  hardMetricsPassed,
+  measureFile,
+  measureRepeatedLines,
+  measureRepeatedLinesAcross,
+  previewPrice,
+} from "./metrics.js";
 import { JUDGE_RUBRIC, RUBRIC_VERSION } from "./rubric.js";
 import { runEval, summarise, writeResults } from "./runner.js";
 
@@ -656,5 +662,72 @@ describe("repeated lines and markup", () => {
       parseSubtitleText(srt("<i>Der Strecke ist das egal.</i>", "Die Strecke kümmert das nicht.")),
     );
     expect(drifted[0]?.consistent).toBe(false);
+  });
+});
+
+/**
+ * A catchphrase said once an episode never repeats inside any one file, so the
+ * per-file measurement cannot see it and only the upload-wide one can. The
+ * season fixture has no such line, which is itself the finding; this states the
+ * behaviour on a season that does.
+ */
+describe("repeated lines across an upload", () => {
+  const srt = (...texts: string[]): string =>
+    texts
+      .map((text, index) => {
+        const stamp = `00:00:0${(index + 1).toString()}`;
+        return `${(index + 1).toString()}\n${stamp},000 --> ${stamp},900\n${text}\n`;
+      })
+      .join("\n") + "\n";
+
+  it("counts a line that recurs once per episode and reports one rendering", () => {
+    const files = [
+      {
+        source: parseSubtitleText(srt("The light has opinions.", "Twelve weeks already.")),
+        output: parseSubtitleText(srt("Das Licht hat Meinungen.", "Schon zwölf Wochen.")),
+      },
+      {
+        source: parseSubtitleText(srt("Sixteen weeks already.", "The light has opinions.")),
+        output: parseSubtitleText(srt("Schon sechzehn Wochen.", "Das Licht hat Meinungen.")),
+      },
+    ];
+    const measured = measureRepeatedLinesAcross(files);
+    expect(measured).toHaveLength(1);
+    expect(measured[0]?.source).toBe("The light has opinions.");
+    expect(measured[0]?.occurrences).toBe(2);
+    expect(measured[0]?.consistent).toBe(true);
+  });
+
+  it("reports the drift when two episodes say it differently", () => {
+    const measured = measureRepeatedLinesAcross([
+      {
+        source: parseSubtitleText(srt("The light has opinions.")),
+        output: parseSubtitleText(srt("Das Licht hat Meinungen.")),
+      },
+      {
+        source: parseSubtitleText(srt("The light has opinions.")),
+        output: parseSubtitleText(srt("Die Leuchte hat Launen.")),
+      },
+    ]);
+    expect(measured[0]?.consistent).toBe(false);
+    expect(measured[0]?.renderings).toEqual([
+      "Das Licht hat Meinungen.",
+      "Die Leuchte hat Launen.",
+    ]);
+  });
+
+  it("finds nothing when no episode shares a line", () => {
+    expect(
+      measureRepeatedLinesAcross([
+        {
+          source: parseSubtitleText(srt("Write that in the log.")),
+          output: parseSubtitleText(srt("Schreib das ins Logbuch.")),
+        },
+        {
+          source: parseSubtitleText(srt("Write it in the log.")),
+          output: parseSubtitleText(srt("Schreib es ins Logbuch.")),
+        },
+      ]),
+    ).toEqual([]);
   });
 });
