@@ -87,7 +87,7 @@ pnpm dev:mock    # the web app alone, in mock mode; needs nothing
 pnpm dev:api     # just the local API, on port 5174
 pnpm lint        # ESLint with type-aware rules, then Prettier
 pnpm typecheck   # tsc -b across the workspace, then the app
-pnpm test        # 713 tests, in two Vitest projects: the packages and the app
+pnpm test        # 719 tests, in two Vitest projects: the packages and the app
 pnpm test:coverage
 pnpm --filter web build
 ```
@@ -186,14 +186,14 @@ run, as section 6.8 says.
 
 ## The measurements specification section 5.5 asks for
 
-| What to measure                                        | Where the code records it                                                                                                                                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Thinking overhead at `low`, `medium` and `high` effort | `report.usage.outputTokens` per file, printed by the CLI and stored in `result.json`. Sweep with `pnpm harness translate … --effort low\|medium\|high` on the same file and compare.              |
-| Real expansion factors per target language             | `report.dialogueChars` against `report.usage.outputTokens` for the same file into each target; the eval runner records both for every file and language in one `result.json`.                     |
-| Characters of dialogue per token per language          | The same two fields; this is what ties the price per 1,000 characters to the cost per token.                                                                                                      |
-| The economy lane's cache-hit rate                      | `advisory.cacheReadShare` in the eval results, and `usage.cacheReadInputTokens` against `usage.cacheCreationInputTokens` in every file report.                                                    |
-| The economy lane's turnaround                          | `report.wallTimeMs`, which spans submission to collection on that lane.                                                                                                                           |
-| Whether Haiku 4.5 is acceptable for the economy lane   | **Measured, and the answer is no** — the dated comparison below. Sonnet 5 translates on both lanes, and the economy lane's discount comes from the Message Batches API, not from a cheaper model. |
+| What to measure                                        | Where the code records it                                                                                                                                                                                                                             |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Thinking overhead at `low`, `medium` and `high` effort | **Measured on 14 September 2026** — the effort sweep below. `low` holds every judge axis inside noise and saves 3.9%, not the 15% sections 5.5 and 6.9 assume; `high` costs 117% more for nothing. Re-measure with `pnpm evals run --effort <level>`. |
+| Real expansion factors per target language             | `report.dialogueChars` against `report.usage.outputTokens` for the same file into each target; the eval runner records both for every file and language in one `result.json`.                                                                         |
+| Characters of dialogue per token per language          | The same two fields; this is what ties the price per 1,000 characters to the cost per token.                                                                                                                                                          |
+| The economy lane's cache-hit rate                      | `advisory.cacheReadShare` in the eval results, and `usage.cacheReadInputTokens` against `usage.cacheCreationInputTokens` in every file report.                                                                                                        |
+| The economy lane's turnaround                          | `report.wallTimeMs`, which spans submission to collection on that lane.                                                                                                                                                                               |
+| Whether Haiku 4.5 is acceptable for the economy lane   | **Measured, and the answer is no** — the dated comparison below. Sonnet 5 translates on both lanes, and the economy lane's discount comes from the Message Batches API, not from a cheaper model.                                                     |
 
 The cost model itself (`packages/harness/src/cost.ts`) carries the price table
 of specification section 5.1 and reproduces the worked breakdown of section 5.4
@@ -314,9 +314,12 @@ The outputs are under `.local/runs/2026-09-11-2200-*`, one directory per arm,
 each with its `report.json`. No judge was run: these are structural, cost and
 consistency measurements plus a reading of the files.
 
-Still unmeasured: every effort level other than `medium`, and every language
-other than German and Bulgarian. No LLM judge has scored a run on the rubric.
-The economy lane has since been run; the next section is what it measured.
+Still unmeasured at the time of that comparison: every effort level other than
+`medium`, and every language other than German and Bulgarian. No LLM judge had
+scored a run on the rubric. All three have since been done — the economy lane in
+the next section, the judge in "The prompt that did not land", and `low` and
+`high` in "The effort sweep" below. Every language other than German and
+Bulgarian is still unmeasured.
 
 ### The economy lane, as measured on 12 September 2026
 
@@ -483,8 +486,11 @@ proportion to the thinking they buy, and that thinking is what breaks the
 ceiling.** `der-leuchtturm.srt` is the control: German into German, a near-copy
 the judge scores 5.00 on every axis, and its output tokens doubled under v4
 without a word of its translation changing. The next attempt should move one
-rule at a time, and should treat effort as a variable rather than holding it at
-`medium`.
+rule at a time. Treating effort as the variable rather than holding it at
+`medium` was the other half of that suggestion, and it has now been done: the
+effort sweep below holds the prompt at `@v3` and moves the effort instead, and
+it finds the same shape from the other side — at `high`, 163% more output tokens
+buy no judge axis worth having.
 
 **What did work, and needs no model.** In both runs every one of the 18
 verbatim-repeated lines in the corpus came back with exactly one rendering: the
@@ -509,6 +515,133 @@ run is $2.39 all in.
 | v3 baseline, 07:36 |     $1.0615 |        $1.3328 | $2.3943 |
 | v4, 09:17          |     $1.2570 |        $1.4101 | $2.6671 |
 | v5, 09:41          |     $1.1564 |        $1.3532 | $2.5096 |
+
+### The effort sweep, as measured on 14 September 2026
+
+The measurement specification section 5.5 asks for first and section 12.1
+decision 6 waits on. `low`, `medium` and `high` on the two full-length fixtures
+into German, `claude-sonnet-5`, fast lane, prompt `lexicue/system@v3`, with Opus
+5 judging the **same deterministic 20-cue stratified sample per file in every
+arm**. The `medium` column is this morning's v3 baseline, reused rather than
+re-run. Two files, 1,400 cues, 44,580 characters; 40 cues judged per arm, so
+**a difference under 0.05 on a judge mean is noise, and is marked below.**
+
+| Both files, 1,400 cues |               `low` |  `medium` |                `high` |
+| ---------------------- | ------------------: | --------: | --------------------: |
+| Hard metrics           |                pass |      pass |                  pass |
+| Repairs, untranslated  |                1, 0 |      1, 0 |                  1, 0 |
+| Accuracy               |      4.875 (−0.005) |     4.880 |        4.875 (−0.005) |
+| Naturalness            |      4.750 (−0.030) |     4.780 |        4.750 (−0.030) |
+| Register               |      5.000 (+0.025) |     4.975 |    4.925 (**−0.050**) |
+| Name consistency       |      4.950 (+0.045) |     4.905 |    4.975 (**+0.070**) |
+| Output tokens          |      49,321 (−8.1%) |    53,641 | 141,114 (**+163.1%**) |
+| Input tokens           |              78,546 |    77,458 |                93,496 |
+| Cache reads            |             194,635 |   179,292 |               192,058 |
+| Model cost             | $0.7582 (**−3.9%**) |   $0.7886 | $1.7099 (**+116.8%**) |
+| Cost per cue           |           $0.000542 | $0.000563 |             $0.001221 |
+| Per 1,000 characters   |             $0.0170 |   $0.0177 |               $0.0384 |
+| Wall time              |             199.6 s |   215.9 s |    666.0 s (**3.1x**) |
+| Judge cost (Opus 5)    |             $0.4575 |   $0.4691 |               $0.4618 |
+
+Per file, where the two differ in shape — a 400-cue drama of short exchanges
+and a 1,000-cue comedy:
+
+| `drama/the-signal-box.srt`, 400 cues |   `low` | `medium` |   `high` |
+| ------------------------------------ | ------: | -------: | -------: |
+| Accuracy                             |    4.85 |     4.81 |     4.80 |
+| Naturalness                          |    4.70 |     4.71 | **4.55** |
+| Register                             |    5.00 |     4.95 |     4.85 |
+| Name consistency                     |    4.95 |     4.81 |     4.95 |
+| Reading-speed flags per 1,000 cues   |   247.5 |      255 |      225 |
+| Long lines per 1,000 cues            |     165 |      155 |    137.5 |
+| Output tokens                        |  15,617 |   16,641 |   47,938 |
+| Model cost                           | $0.2304 |  $0.2406 |  $0.5788 |
+| Wall time                            |  90.0 s |   98.7 s |  395.4 s |
+
+| `comedy/the-inventory.srt`, 1,000 cues |   `low` | `medium` |  `high` |
+| -------------------------------------- | ------: | -------: | ------: |
+| Accuracy                               |    4.90 |     4.95 |    4.95 |
+| Naturalness                            |    4.80 |     4.85 |    4.95 |
+| Register                               |    5.00 |     5.00 |    5.00 |
+| Name consistency                       |    4.95 |     5.00 |    5.00 |
+| Reading-speed flags per 1,000 cues     |     185 |      207 |     219 |
+| Long lines per 1,000 cues              |      65 |       97 |      92 |
+| Output tokens                          |  33,704 |   37,000 |  93,176 |
+| Model cost                             | $0.5279 |  $0.5480 | $1.1311 |
+| Wall time                              | 109.6 s |  117.2 s | 270.6 s |
+
+**`low` holds quality, and saves 3.9% rather than 15%.** Every one of the four
+judge axes moves by less than 0.05 — accuracy −0.005, naturalness −0.030,
+register +0.025, names +0.045 — which on a 40-cue sample is noise in both
+directions, and the hard metrics, the repair count and the untranslated count
+are identical. The advisory flags move the right way rather than the wrong one:
+reading-speed findings fall on both files and long lines fall by a third on the
+1,000-cue file. **So the quality condition sections 5.5 and 6.9 attach to `low`
+is met. The saving those sections attach to it is not.** They expect about 15%
+of blended model cost; the measurement is 3.9%.
+
+**Why the saving is a quarter of what the specification assumes.** Effort can
+only remove thinking, and on this task there is much less of it to remove than
+section 5.4's budget implies. The floor is the translated JSON itself: at `low`
+the run still emitted 49,321 output tokens for 1,400 cues, and every one of
+those cues came back complete and valid, so that volume is irreducible. Dropping
+from `medium` to `low` removed 4,320 output tokens — 8.1% of output, and 3.9% of
+a bill in which output is 68% of the total. To reach 15% off the total, output
+would have had to fall by about 22%. Section 5.4's own output budget for a film
+is sound — it models 57,000 tokens where 1,400 measured cues emitted 53,641 at
+`medium` — but the share of it that is thinking, and therefore reachable by the
+effort setting, is roughly a third of what section 6.9 counts on.
+
+**`high` buys nothing and costs more than double.** Output tokens rise 163% and
+the bill rises 117%, for no quality: accuracy and naturalness move by less than
+0.05, name consistency gains 0.070 and register _loses_ 0.050. The one visible
+change is in the wrong direction — the drama's naturalness falls to **4.55**,
+the lowest single reading anywhere in this sweep, on the file whose dialogue is
+shortest and quickest. Wall time triples, from 215.9 to 666.0 seconds for the
+same 1,400 cues, which is a fast-lane promise (section 3.2) as well as a bill.
+**Nothing in this measurement argues for running the product above `medium`.**
+
+**What it means for section 6.9's margin arithmetic.** That section lists effort
+`low` first among the levers behind the price, worth "about 15%" of blended
+model cost and margins "in the mid fifties"; section 5.5 has the film dropping
+from $0.75 toward $0.65 on the same assumption. At 3.9% the film drops to about
+**$0.72**, and the margin moves by roughly a point rather than into a new band.
+`low` is therefore a real but minor economy, not a pricing lever: if the blind
+preference test of section 6.7 ever forces the price toward the cheap tools',
+the levers that can actually carry it are the economy lane's discount and the
+rate itself, and section 6.9's first bullet should not be counted on for the
+difference. **The product's default is left at `medium` in
+`packages/harness/src/config.ts`; this is the founder's call, and specification
+section 9.8 makes it a configuration edit rather than a deploy.** The case for
+moving it is 3.9% at no measured quality cost; the case against is that 3.9% of
+the model bill is smaller than the noise in a month's traffic mix, and `medium`
+is what every measurement in this README was taken at.
+
+**One thing the sweep could not settle.** The repeated-line advisory reports 5
+of 18 repeated lines drifting at `low` and 3 of 18 at `high`, all of them in the
+1,000-cue file and all of them radio procedure — "Go ahead, Mrs. Ayres." coming
+back as both `Kommen` and `Sprechen Sie`. **There is no `medium` number to
+compare them against**: the advisory postdates the v3 baseline run, so that
+column is blank rather than zero, and re-running `medium` was not in this
+measurement's budget. What the two arms do show is that drift on this file is
+present at both ends of the effort range, which points at the prompt rather than
+at thinking — `@v3` carries no fixed-rendering mechanism, that having been
+reverted with `@v4` and `@v5` — and it is the deterministic half of that work,
+still in `packages/harness/src/repeats.ts`, that would fix it. Effort is not the
+variable here.
+
+**What the sweep cost.** Two real invocations, $3.39 in total: `low` $1.2157
+($0.7582 translation, $0.4575 judge) and `high` $2.1717 ($1.7099 translation,
+$0.4618 judge). The `medium` arm cost nothing, being the morning's baseline read
+off disk. Results under `.local/evals/2026-09-14T10-27-23-668Z-2026-09-14-de-effort-low/`
+and `.local/evals/2026-09-14T10-33-17-222Z-2026-09-14-de-effort-high/`.
+
+One caveat on the cache columns, which does not affect the comparison: the
+`medium` baseline ran these two files inside a 13-file run, so the shared
+system-prompt entry was already warm when they started, while each of the two
+sweep runs paid for it once on its first file — about 3,000 tokens, under a
+cent. Per-file cache writes are dominated by each file's own source document,
+which is identical in all three arms.
 
 ### What a full real eval would cost, for the founder to approve
 
@@ -750,7 +883,7 @@ locally on this commit.
 
 ## Test counts and coverage, as measured
 
-713 tests in 39 files, all offline: nothing in the suite touches the network or
+719 tests in 39 files, all offline: nothing in the suite touches the network or
 the key, and the local development API is driven over real HTTP against the
 deterministic fake model client.
 
@@ -758,14 +891,14 @@ deterministic fake model client.
 | -------------------- | ---------: | ---------: | ---------: | ---------: |
 | `packages/subtitles` |     99.03% |     96.64% |       100% |     98.82% |
 | `packages/pricing`   |       100% |       100% |       100% |       100% |
-| `packages/harness`   |     97.35% |     88.94% |     97.03% |     98.65% |
+| `packages/harness`   |     97.36% |     88.94% |     97.05% |     98.65% |
 | `packages/shared`    |     99.13% |     83.87% |       100% |       100% |
 | `packages/core`      |     90.07% |     76.43% |     92.98% |     91.77% |
-| `packages/cli`       |     91.62% |     74.24% |       100% |     92.85% |
+| `packages/cli`       |     91.57% |     74.24% |       100% |     92.81% |
 | `packages/dev-api`   |     79.45% |     73.46% |     85.71% |     81.29% |
-| `evals`              |     90.14% |     76.36% |     91.86% |     93.10% |
+| `evals`              |     90.49% |     76.92% |     92.30% |     93.36% |
 | `infra`              |     77.62% |     66.18% |     53.06% |     79.27% |
-| **All**              | **91.93%** | **81.77%** | **92.24%** | **93.40%** |
+| **All**              | **91.96%** | **81.80%** | **92.30%** | **93.42%** |
 
 `packages/dev-api` and `infra` are the lowest, and deliberately so. What is
 uncovered in `dev-api` is its executable entry points (`bin.ts`, `dev.ts`),

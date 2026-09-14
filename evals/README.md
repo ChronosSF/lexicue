@@ -75,8 +75,23 @@ total nearer $20 to $24. One judged target costs about $2.40 all in. Specificati
 which does not reconcile with its own corpus and targets — see
 `apps/web/README.md`. `pnpm evals run --help` lists
 every flag; `--no-judge` gives a structural and cost run with no judge spend,
-`--only comedy/` narrows the corpus, and `--lane economy` runs the Message
-Batches path.
+`--lane economy` runs the Message Batches path, and `--effort <level>` sets the
+translation model's thinking effort, refusing a level the harness cannot send
+and a model the capability table says rejects the field.
+
+`--only` narrows the corpus and takes a comma-separated list, which is how a
+measurement run names several files in one invocation:
+
+```sh
+pnpm evals run --to de --effort low \
+  --only drama/the-signal-box.srt,comedy/the-inventory.srt \
+  --out .local/evals --label 2026-09-14-de-effort-low
+```
+
+One invocation rather than two per arm is deliberate: the files of a run share a
+process and the cached system prefix, so measuring them separately would put a
+cold cache in one arm and a warm one in the other and call the difference
+effort.
 
 **Reading a `--fake` run.** The fake model wraps English dialogue in
 guillemets. That is a valid structural translation, so every hard metric passes,
@@ -142,12 +157,44 @@ reporting it as drift is a false positive — which is what it did on 14 Septemb
 disagreement: some episodes that use the name render it the fixed way and some
 do not.
 
+## The effort setting, as measured on 14 September 2026
+
+**`low` holds quality and saves 3.9%; `high` costs 117% more and buys nothing.**
+The sweep ran `low` and `high` on the two full-length fixtures into German,
+prompt `@v3`, fast lane, against the morning's `medium` v3 baseline reused
+rather than re-run, with the judge scoring the same deterministic 20-cue sample
+per file in every arm. Forty cues per arm, so a mean moving less than 0.05 is
+noise.
+
+| Both files, 1,400 cues |           `low` | `medium` |            `high` |
+| ---------------------- | --------------: | -------: | ----------------: |
+| Accuracy               |  4.875 (−0.005) |    4.880 |    4.875 (−0.005) |
+| Naturalness            |  4.750 (−0.030) |    4.780 |    4.750 (−0.030) |
+| Register               |  5.000 (+0.025) |    4.975 |    4.925 (−0.050) |
+| Name consistency       |  4.950 (+0.045) |    4.905 |    4.975 (+0.070) |
+| Output tokens          |  49,321 (−8.1%) |   53,641 | 141,114 (+163.1%) |
+| Model cost             | $0.7582 (−3.9%) |  $0.7886 | $1.7099 (+116.8%) |
+| Wall time              |         199.6 s |  215.9 s |    666.0 s (3.1x) |
+
+**The recommendation for the founder.** `low` is safe on quality — all four axes
+inside noise, hard metrics identical, and the advisory flags slightly better —
+but it is worth 3.9%, not the 15% specification sections 5.5 and 6.9 assume,
+because effort can only remove thinking and the translated JSON is a floor: at
+`low` the run still emitted 49,321 output tokens for 1,400 cues, all of them
+valid. `high` is refuted outright: 163% more output tokens, 117% more cost, three
+times the wall time, register down 0.050 and the drama's naturalness down to
+4.55. **The product default stays `medium` in `packages/harness/src/config.ts`
+until the founder decides**; the root `README.md` carries the per-file tables,
+the arithmetic and what it does to section 6.9's margins.
+
 ## Results
 
 `pnpm evals run` writes a folder under `evals/results` named for the run's
 timestamp and model, holding `result.json` and a `summary.md` that a reviewer
 can read in a pull request. Committing those folders is what makes a regression
-visible in review.
+visible in review. A measurement run that is not a regression check belongs in
+`.local/` instead, which is git-ignored: the three judged prompt runs and both
+arms of the effort sweep are there, named in the root `README.md`.
 
 ## Still to do
 
@@ -156,13 +203,14 @@ visible in review.
 - The blind pairwise preference test against the cheap tools of specification
   section 6.7, which decides whether the fast lane keeps its premium. It needs
   native speakers, not code.
-- The effort sweep (`low`, `medium`, `high`), which the runner already supports
-  through `--model` and a config override, but which has not been run because it
-  needs the real API.
+- **Done.** The effort sweep (`low`, `medium`, `high`) was run on 14 September
+  2026 and has its own section below; `--effort` is now a flag rather than a
+  config override in TypeScript.
 - **Done, three times over.** Judged runs of the whole corpus into German were
   made on 14 September 2026 against `lexicue/system@v3`, `@v4` and `@v5`. The
   root `README.md` carries the axis-by-axis table. The prompt is back at `@v3`:
   neither replacement held every judge axis at or above the baseline while
   staying inside the 5% cost ceiling.
-- A judged run into any target but German, and the effort sweep, which is the
-  variable the German runs suggest matters most.
+- A judged run into any target but German. The effort sweep was the other half
+  of this entry and is now done: effort is not the variable the German prompt
+  runs suggested it might be, and the section above says what it is worth.
