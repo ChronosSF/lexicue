@@ -880,12 +880,20 @@ and the demo's history and reset.
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every pull request and on every push to
-`main`. It is one job on `ubuntu-latest`: check out, install pnpm, install
-Node.js 24, `pnpm install --frozen-lockfile`, then the same four commands
-"Getting started" lists above — `pnpm lint`, `pnpm typecheck`,
-`pnpm test:coverage`, `pnpm --filter web build` — in that order. Keeping the
-workflow a thin wrapper over the package scripts is what makes a red run
-reproducible locally in one command.
+`main`. It is two jobs on `ubuntu-latest`, side by side.
+
+`check` is the original: check out, install pnpm, install Node.js 24,
+`pnpm install --frozen-lockfile`, then the same four commands "Getting started"
+lists above — `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage`,
+`pnpm --filter web build` — in that order. Keeping the workflow a thin wrapper
+over the package scripts is what makes a red run reproducible locally in one
+command.
+
+`e2e` installs dependencies the same way, adds `playwright install --with-deps
+chromium`, and runs `pnpm --filter web e2e`. On failure — and only on failure —
+it uploads Playwright's HTML report, with the trace of the retried run in it, as
+an artifact named `playwright-report`. Ten minutes is its whole budget; it takes
+about two.
 
 Three details are deliberate:
 
@@ -915,9 +923,13 @@ CI and on a laptop.
 
 The founder pushes, so this workflow has never run on GitHub. What has been
 done is to validate it as YAML against the SchemaStore GitHub workflow schema,
-check `actions/checkout@v7`, `actions/setup-node@v7` and `pnpm/action-setup@v6`
-against the current major version of each, and run every one of its steps
-locally on this commit.
+check `actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6` and
+`actions/upload-artifact@v7` against the current major version of each, and run
+both jobs' commands locally on this commit, from a fresh clone installed with
+`--frozen-lockfile`. Two steps of the `e2e` job could not be: `--with-deps`
+installs Linux system libraries and this is Windows, so the browser came from a
+plain `playwright install chromium`, and uploading the report is an action
+rather than a command.
 
 ## Test counts and coverage, as measured
 

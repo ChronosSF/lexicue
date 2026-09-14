@@ -324,11 +324,10 @@ and the wallet down by exactly the price the table previewed.
 What they cover, in order of the "what to click" list above: the sample tray and
 the preview table, including a dropped zip unpacked in the browser and a file
 that is not a subtitle file explaining itself in its own row and being removed
-without discarding the rest; the
-language and lane choices and the confirm button's arithmetic; `fail.srt`'s
-automatic refund and the ledger entry behind it; a balance too short, which
-offers a top-up and credits it through the mock checkout; the economy lane's
-notice and its file coming back intact; all three Skerry Point episodes at once,
-their shared season glossary, and the "Download all" zip, unpacked and parsed
-file by file; the same-language refusal of section 3.3; and the history and
-"Reset the demo".
+without discarding the rest; the language and lane choices and the confirm
+button's arithmetic; `fail.srt`'s automatic refund and the ledger entry behind
+it; a balance too short, which offers a top-up and credits it through the mock
+checkout; the economy lane's notice and its file coming back intact; all three
+Skerry Point episodes at once, their shared season glossary, and the "Download
+all" zip, unpacked and parsed file by file; the same-language refusal of section
+3.3; and the history and "Reset the demo".

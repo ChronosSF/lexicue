@@ -74,3 +74,54 @@ jobs:
 
       - name: Build the web app
         run: pnpm --filter web build
+
+  # The smoke test of specification section 10.3, which that section runs
+  # against staging after every deploy. Nothing is deployed, so the subject is
+  # the mock backend: the whole product in the browser, no key, no network, no
+  # spend. It runs beside `check` rather than after it, because a broken flow
+  # and a lint error are worth knowing about in the same two minutes.
+  e2e:
+    name: end-to-end, mock backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The browser build is pinned by @playwright/test itself, so this installs
+      # the Chromium that version was tested against, with the system libraries
+      # a headless browser needs on a bare runner.
+      - name: Install Chromium
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # Builds the mock app and serves it on its own port; see
+      # apps/web/playwright.config.ts.
+      - name: Run the end-to-end suite
+        run: pnpm --filter web e2e
+
+      # Only on failure: the report carries the trace of the retried run, which
+      # is the thing worth opening, and a green run has nothing in it to read.
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+          # Re-running the failed job is the first thing anyone does, and a
+          # second upload under the same name fails without this.
+          overwrite: true
